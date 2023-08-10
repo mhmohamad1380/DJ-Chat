@@ -1,0 +1,48 @@
+<!-- chat/templates/chat/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Chat Rooms</title>
+</head>
+<body>
+    What chat room would you like to enter?<br>
+    <input id="room-name-input" type="text" size="100"><br>
+    <input id="room-name-submit" type="button" value="Enter">
+    <br>
+    or
+    <br>
+    <div>
+        <input id="room-name" type="text" placeholder="Room Name:">
+        <input id="room-name-create" type="button" value="Create a Room">
+    </div>
+    
+    <script>
+        document.querySelector('#room-name-input').focus();
+        document.querySelector('#room-name-input').onkeyup = function(e) {
+            if (e.keyCode === 13) {  // enter, return
+                document.querySelector('#room-name-submit').click();
+            }
+        };
+
+        document.querySelector('#room-name-submit').onclick = function(e) {
+            var roomName = document.querySelector('#room-name-input').value;
+            window.location.pathname = '/chat/' + roomName + '/';
+        };
+
+        document.querySelector('#room-name').focus();
+        document.querySelector('#room-name').onkeyup = function(e) {
+            if (e.keyCode === 13) {  // enter, return
+                document.querySelector('#room-name-create').click();
+            }
+        };
+
+        document.querySelector('#room-name-create').onclick = function(e) {
+            var roomName = document.querySelector('#room-name').value;
+            if(roomName != ""){
+                window.location.pathname = '/chat/room/create/' + roomName + '/';
+            }
+        };
+    </script>
+</body>
+</html>
