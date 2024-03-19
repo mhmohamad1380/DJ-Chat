@@ -29,6 +29,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         user = User.objects.filter(username=username).first()
         room = Room.objects.filter(name=room).first()
         Message.objects.create(sender=user, message=message, room=room)
+        return 1
 
     @property
     @database_sync_to_async
@@ -60,8 +61,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = event["message"]
         username = event['username']
         room = event['room']
+        auth_username = self.scope['user'].username
 
         new_message = await self.create_message(username=username, message=message, room=room)
 
         # Send message to WebSocket
-        await self.send(text_data=json.dumps({"message": message, "username": username}))
+        await self.send(text_data=json.dumps({"message": message, "username": username, "auth_username": auth_username}))

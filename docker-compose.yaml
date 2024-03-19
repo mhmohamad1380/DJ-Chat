@@ -22,7 +22,6 @@ services:
       - DB_NAME=app
       - DB_USER=postgres
       - DB_PASS=postgresqlpassword
-
   db:
     container_name: db
     image: postgres:latest
@@ -43,3 +42,5 @@ services:
       - 80:80
     volumes:
       - ./app/staticfiles:/etc/nginx/chat/staticfiles
+    depends_on:
+      - app

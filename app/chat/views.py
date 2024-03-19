@@ -4,6 +4,8 @@ from .models import Room, Message
 from slugify import slugify
 from django.conf import settings
 from django_ratelimit.decorators import ratelimit
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 # Create your views here.
 
@@ -24,7 +26,7 @@ def room(request, room_name):
         return HttpResponse("You do not have access!")
     
     messages = Message.objects.filter(room__name=room_name).all()
-    return render(request, "chat/room.html", {"room_name": room_name, "messages": messages})
+    return render(request, "chat/room.html", {"room_name": room_name, "messages": messages, "username": str(request.user.username)})
 
 
 def home_redirect(request):
@@ -48,3 +50,31 @@ def create_room(request, room_name):
 
 
     return HttpResponse(f"the room with name: {room.name} has successfully created!")
+
+def user_rooms_list(request):
+    if not request.user.is_authenticated:
+        return redirect("/user/register/")
+    
+    rooms = Room.objects.prefetch_related("granted_users").filter(granted_users__in=[request.user]).all()
+    return render(request, "chat/invite.html", context={"rooms": rooms})
+
+def user_invite(request):
+    if not request.user.is_authenticated:
+        return redirect("/user/register/")
+    
+    room_pk = request.POST.get("room")
+    username = request.POST.get("username")
+    room = Room.objects.prefetch_related("granted_users").get(pk=room_pk, granted_users__in=[request.user])
+    try:
+        user = User.objects.get(username=username)
+    except User.DoesNotExist:
+        return HttpResponse("this User does not exist!")
+
+    try:
+        room.granted_users.add(user)
+        room.save()
+    except:
+        return HttpResponse("something went wrong!")
+    
+    return HttpResponse("the User has been Invited successfully :)")
+

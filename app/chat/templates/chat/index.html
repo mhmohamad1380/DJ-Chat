@@ -4,17 +4,33 @@
 <head>
     <meta charset="utf-8"/>
     <title>Chat Rooms</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/css/bootstrap.min.css">
 </head>
 <body>
-    What chat room would you like to enter?<br>
-    <input id="room-name-input" type="text" size="100"><br>
-    <input id="room-name-submit" type="button" value="Enter">
+    
+    <div class="form-control">
+        <center>
+            <p>What chat room would you like to enter?</p><br/>
+            <input id="room-name-input" type="text" size="100"><br>
+        <input style="margin: 5px;" class="btn btn-success" id="room-name-submit" type="button" value="Enter">
+        </center>
+    </div>
+    
     <br>
-    or
+    <div class="form-control">
+        <center>
+            <p>or</p>
+            <input id="room-name" type="text" placeholder="Room Name:"><br>
+        <input style="margin: 5px;" class="btn btn-success" id="room-name-create" type="button" value="Create a Room">
+        </center>
+    </div>
+
     <br>
-    <div>
-        <input id="room-name" type="text" placeholder="Room Name:">
-        <input id="room-name-create" type="button" value="Create a Room">
+    <div class="form-control">
+        <center>
+            <p>or</p>
+            <input style="margin: 5px;" class="btn btn-success" id="invite" type="button" value="Invite a User">
+        </center>
     </div>
     
     <script>
@@ -42,6 +58,10 @@
             if(roomName != ""){
                 window.location.pathname = '/chat/room/create/' + roomName + '/';
             }
+        };
+
+        document.querySelector('#invite').onclick = function(e) {
+            window.location.pathname = '/chat/user/invite/';
         };
     </script>
 </body>

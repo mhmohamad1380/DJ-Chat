@@ -8,9 +8,13 @@
 </head>
 <body>
     <center>
-        <textarea style="margin: 10px; width: auto;" class="form-control" id="chat-log" cols="100" rows="20" readonly>
+        <textarea style="margin: 5px; width: auto;" class="form-control" id="chat-log" cols="100" rows="20" readonly>
             {% for message in messages %}
-{{ message.sender.username }}: {{ message.message }}
+                {% if message.sender.username == username %}
+                    me: {{ message.message }}
+                {% else %}
+                    {{ message.sender.username }}: {{ message.message }}
+                {% endif %}
             {% endfor %}
             </textarea><br>
             <input class="form-control" style="width: auto;" id="chat-message-input" type="text" size="50" ><br>
@@ -21,7 +25,7 @@
         const roomName = JSON.parse(document.getElementById('room-name').textContent);
 
         const chatSocket = new WebSocket(
-            "wss://"
+            "ws://"
             + window.location.host
             + '/ws/chat/'
             + roomName
@@ -30,11 +34,24 @@
 
         chatSocket.onmessage = function(e) {
             const data = JSON.parse(e.data);
+        
+            const message = `${data.username}: ${data.message}\n`;
+          
+            if (data.username === data.auth_username) {
+              document.querySelector('#chat-log').value += `me: ${data.message}\n`;
+            } else {
+              document.querySelector('#chat-log').value += message;
+            }
+          
+            const chatLog = document.querySelector('#chat-log');
+            chatLog.scrollTop = chatLog.scrollHeight;
+        };
+        {% comment %} chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
             document.querySelector('#chat-log').value += (data.username + ": " + data.message + '\n');
             var n = document.querySelector('#chat-log')
             n.scrollTop = n.scrollHeight;
-        };
-
+        }; {% endcomment %}
         chatSocket.onclose = function(e) {
             console.error('Chat socket closed unexpectedly');
         };
