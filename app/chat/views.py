@@ -26,6 +26,12 @@ def room(request, room_name):
         return HttpResponse("You do not have access!")
     
     messages = Message.objects.filter(room__name=room_name).all()
+    messages = [
+        {
+            "sender": message.sender,
+            "message": message.get_decrypted_message()
+        } for message in messages
+    ]
     return render(request, "chat/room.html", {"room_name": room_name, "messages": messages, "username": str(request.user.username)})
 
 
