@@ -1,31 +1,125 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8"/>
-    <title>Chat Room</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/css/bootstrap.min.css">
-    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat: {{ room_name }}</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for a more polished experience */
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Prevent the whole page from scrolling on mobile */
+            overflow: hidden;
+        }
+
+        /* Custom scrollbar for a cleaner look in WebKit browsers */
+        #chat-log::-webkit-scrollbar {
+            width: 6px;
+        }
+        #chat-log::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #chat-log::-webkit-scrollbar-thumb {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 20px;
+        }
+        .dark #chat-log::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Animation for new messages */
+        @keyframes fadeInSlideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .message-animate {
+            animation: fadeInSlideUp 0.3s ease-out forwards;
+        }
+    </style>
 </head>
-<body>
-    <center>
-        <textarea style="margin: 5px; width: auto;" class="form-control" id="chat-log" cols="100" rows="20" readonly>
-            {% for message in messages %}
-                {% if message.sender.username == username %}
-                    me: {{ message.message }}
-                {% else %}
-                    {{ message.sender.username }}: {{ message.message }}
-                {% endif %}
-            {% endfor %}
-            </textarea><br>
-            <input class="form-control" style="width: auto;" id="chat-message-input" type="text" size="50" ><br>
-            <input class="btn btn-success" style="width: auto;" id="chat-message-submit" type="button" value="Send">
-            {{ room_name|json_script:"room-name" }}
-    </center>
+<body class="bg-gradient-to-br from-sky-400 to-blue-600">
+
+    <!-- This div centers the container on desktop. On mobile, it's effectively invisible. -->
+    <div class="md:min-h-screen md:flex md:items-center md:justify-center md:p-4">
+        <!-- Mobile Screen Container: Full screen on mobile, constrained and styled on desktop -->
+        <div class="w-full h-screen flex flex-col bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl md:max-w-sm md:h-[90vh] md:max-h-[800px] md:rounded-3xl md:shadow-2xl overflow-hidden md:border md:border-white/20">
+            
+            <!-- Header (Fixed) -->
+            <header class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-4 flex items-center justify-between z-10 flex-shrink-0 border-b border-white/20">
+                <a href="/" class="text-blue-600 dark:text-blue-400 hover:text-blue-500 flex items-center group">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="font-medium text-sm">Rooms</span>
+                </a>
+                <h1 class="text-md font-bold text-gray-800 dark:text-white truncate px-2">{{ room_name }}</h1>
+                <div class="w-16"></div> <!-- Spacer -->
+            </header>
+
+            <!-- Chat Log (Scrollable) -->
+            <main id="chat-log" class="flex-1 p-4 overflow-y-auto space-y-4">
+                <!-- Messages are rendered by Django on initial load -->
+                {% for message in messages %}
+                    {% if message.sender.username == username %}
+                        <!-- My Message -->
+                        <div class="flex justify-end">
+                            <div class="bg-blue-500 text-white rounded-xl rounded-br-lg px-4 py-2 max-w-[85%] shadow" style="word-break: break-word;">
+                                <p>{{ message.message }}</p>
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- Other's Message -->
+                        <div class="flex justify-start">
+                            <div class="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-xl rounded-bl-lg px-4 py-2 max-w-[85%] shadow" style="word-break: break-word;">
+                                <p class="font-bold text-sm text-blue-500 dark:text-blue-400">{{ message.sender.username }}</p>
+                                <p class="mt-1">{{ message.message }}</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </main>
+
+            <!-- Message Input (Fixed) -->
+            <footer class="p-3 flex-shrink-0 bg-white/10 backdrop-blur-sm border-t border-white/20">
+                <form id="chat-form" class="flex items-center space-x-3">
+                    <input id="chat-message-input" type="text" placeholder="Type a message..." autocomplete="off"
+                           class="flex-1 appearance-none rounded-full px-5 py-3 border border-gray-300/70 dark:border-gray-600/70 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white/80 dark:bg-gray-700/80 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow duration-200">
+                    <button id="chat-message-submit" type="submit" class="inline-flex items-center justify-center rounded-full h-12 w-12 bg-blue-500 text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform duration-200 active:scale-90 flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                    </button>
+                </form>
+            </footer>
+        </div>
+    </div>
+
+    {{ room_name|json_script:"room-name" }}
+    {{ username|json_script:"auth-username" }}
+
     <script>
         const roomName = JSON.parse(document.getElementById('room-name').textContent);
+        const authUsername = JSON.parse(document.getElementById('auth-username').textContent);
+        const chatLog = document.getElementById('chat-log');
+        const chatForm = document.getElementById('chat-form');
+        const messageInput = document.getElementById('chat-message-input');
+
+        function scrollToBottom() {
+            chatLog.scrollTo({ top: chatLog.scrollHeight, behavior: 'smooth' });
+        }
+
+        setTimeout(() => {
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }, 100);
 
         const chatSocket = new WebSocket(
-            "ws://"
+            (window.location.protocol === 'https:' ? 'wss://' : 'ws://')
             + window.location.host
             + '/ws/chat/'
             + roomName
@@ -34,50 +128,50 @@
 
         chatSocket.onmessage = function(e) {
             const data = JSON.parse(e.data);
-        
-            const message = `${data.username}: ${data.message}\n`;
-          
-            if (data.username === data.auth_username) {
-              document.querySelector('#chat-log').value += `me: ${data.message}\n`;
+            const messageContainer = document.createElement('div');
+            const messageBubble = document.createElement('div');
+            
+            messageContainer.classList.add('message-animate');
+
+            if (data.username === authUsername) {
+                messageContainer.className += ' flex justify-end';
+                messageBubble.className = 'bg-blue-500 text-white rounded-xl rounded-br-lg px-4 py-2 max-w-[85%] shadow';
+                messageBubble.innerHTML = `<p>${data.message}</p>`;
             } else {
-              document.querySelector('#chat-log').value += message;
-            }
-          
-            const chatLog = document.querySelector('#chat-log');
-            chatLog.scrollTop = chatLog.scrollHeight;
-        };
-        {% comment %} chatSocket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-            document.querySelector('#chat-log').value += (data.username + ": " + data.message + '\n');
-            var n = document.querySelector('#chat-log')
-            n.scrollTop = n.scrollHeight;
-        }; {% endcomment %}
-        chatSocket.onclose = function(e) {
-            console.error('Chat socket closed unexpectedly');
-        };
-
-
-
-        document.querySelector('#chat-message-input').focus();
-        document.querySelector('#chat-message-input').onkeyup = function(e) {
-            if (e.keyCode === 13) {  // enter, return
-                document.querySelector('#chat-message-submit').click();
-            }
-        };
-
-        document.querySelector('#chat-message-submit').onclick = function(e) {
-            const messageInputDom = document.querySelector('#chat-message-input');
-            const message = messageInputDom.value;
-            if (message != ""){
-                chatSocket.send(JSON.stringify({
-                'message': message,
-                'room_name': roomName,
-            }));
+                messageContainer.className += ' flex justify-start';
+                messageBubble.className = 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-xl rounded-bl-lg px-4 py-2 max-w-[85%] shadow';
+                messageBubble.innerHTML = `<p class="font-bold text-sm text-blue-500 dark:text-blue-400">${data.username}</p><p class="mt-1">${data.message}</p>`;
             }
             
-            messageInputDom.value = '';
+            messageBubble.style.wordBreak = 'break-word';
+            messageContainer.appendChild(messageBubble);
+            chatLog.appendChild(messageContainer);
+            
+            scrollToBottom();
         };
+
+        chatSocket.onclose = function(e) {
+            console.error('Chat socket closed unexpectedly');
+            const disconnectedMessage = document.createElement('div');
+            disconnectedMessage.className = 'text-center text-xs text-gray-500 dark:text-gray-400 py-2';
+            disconnectedMessage.textContent = 'Connection lost. Please refresh.';
+            chatLog.appendChild(disconnectedMessage);
+            scrollToBottom();
+        };
+
+        messageInput.focus();
+
+        chatForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const message = messageInput.value.trim();
+            if (message) {
+                chatSocket.send(JSON.stringify({
+                    'message': message,
+                    'room_name': roomName,
+                }));
+                messageInput.value = '';
+            }
+        });
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

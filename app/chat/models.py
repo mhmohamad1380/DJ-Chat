@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from cryptography.fernet import Fernet
+from datetime import datetime
 
 def generate_key():
     return Fernet.generate_key().decode()
@@ -16,9 +17,11 @@ class Room(models.Model):
         return self.name
 
 class Message(models.Model):
+    reply_to = models.ForeignKey('self', null=True, on_delete=models.SET_NULL, related_name='replies')
     sender = models.ForeignKey(User, blank=False, null=True, on_delete=models.CASCADE, related_name="message_sender")
     room = models.ForeignKey(Room, blank=False, null=True, on_delete=models.CASCADE)
     message = models.TextField()
+    created_at = models.DateTimeField(default=datetime.now)
 
     def __str__(self):
         return f"{self.room.name} | {self.sender.username}"

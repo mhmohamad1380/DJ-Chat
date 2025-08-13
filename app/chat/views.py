@@ -25,7 +25,7 @@ def room(request, room_name):
     if not request.user in room.first().granted_users.all():
         return HttpResponse("You do not have access!")
     
-    messages = Message.objects.filter(room__name=room_name).all()
+    messages = Message.objects.filter(room__name=room_name).order_by('created_at').all()
     messages = [
         {
             "sender": message.sender,

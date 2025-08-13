@@ -1,66 +1,123 @@
-<!-- chat/templates/chat/index.html -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat Rooms</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/css/bootstrap.min.css">
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Simple transition for a smoother UI */
+        .btn {
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+    </style>
 </head>
-<body>
-    
-    <div class="form-control">
-        <center>
-            <p>What chat room would you like to enter?</p><br/>
-            <input id="room-name-input" type="text" size="100"><br>
-        <input style="margin: 5px;" class="btn btn-success" id="room-name-submit" type="button" value="Enter">
-        </center>
-    </div>
-    
-    <br>
-    <div class="form-control">
-        <center>
-            <p>or</p>
-            <input id="room-name" type="text" placeholder="Room Name:"><br>
-        <input style="margin: 5px;" class="btn btn-success" id="room-name-create" type="button" value="Create a Room">
-        </center>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 space-y-6">
+            
+            <!-- Header -->
+            <div class="text-center">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Chat Central</h1>
+                <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Join or create a room to start chatting.</p>
+            </div>
+
+            <!-- Main Form -->
+            <div class="space-y-4">
+                <div>
+                    <label for="room-name-input" class="sr-only">Room Name</label>
+                    <input id="room-name-input" name="room-name" type="text" required class="appearance-none rounded-lg relative block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Enter a room name">
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="space-y-3">
+                <button id="room-name-submit" class="btn w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Enter Room
+                </button>
+                <button id="room-name-create" class="btn w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:text-indigo-300 dark:bg-indigo-900/50 dark:hover:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Create Room
+                </button>
+            </div>
+
+            <!-- Divider and Invite Link -->
+            <div class="relative">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-gray-300 dark:border-gray-600"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">or</span>
+                </div>
+            </div>
+
+            <div>
+                <button id="invite" class="btn w-full flex justify-center py-3 px-4 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400">
+                    Invite a User
+                </button>
+            </div>
+
+        </div>
     </div>
 
-    <br>
-    <div class="form-control">
-        <center>
-            <p>or</p>
-            <input style="margin: 5px;" class="btn btn-success" id="invite" type="button" value="Invite a User">
-        </center>
-    </div>
-    
     <script>
-        document.querySelector('#room-name-input').focus();
-        document.querySelector('#room-name-input').onkeyup = function(e) {
-            if (e.keyCode === 13) {  // enter, return
-                document.querySelector('#room-name-submit').click();
+        // Get the input field and buttons
+        const roomNameInput = document.querySelector('#room-name-input');
+        const submitButton = document.querySelector('#room-name-submit');
+        const createButton = document.querySelector('#room-name-create');
+        const inviteButton = document.querySelector('#invite');
+
+        // Set focus on the input field when the page loads
+        roomNameInput.focus();
+
+        // Add keyup event listener to the input field
+        // Pressing 'Enter' will trigger the 'Enter Room' button click
+        roomNameInput.onkeyup = function(e) {
+            if (e.key === 'Enter' || e.keyCode === 13) {
+                submitButton.click();
             }
         };
 
-        document.querySelector('#room-name-submit').onclick = function(e) {
-            var roomName = document.querySelector('#room-name-input').value;
-            window.location.pathname = '/chat/' + roomName + '/';
-        };
-
-        document.querySelector('#room-name').focus();
-        document.querySelector('#room-name').onkeyup = function(e) {
-            if (e.keyCode === 13) {  // enter, return
-                document.querySelector('#room-name-create').click();
+        // Event listener for the 'Enter Room' button
+        submitButton.onclick = function(e) {
+            const roomName = roomNameInput.value.trim();
+            // A room name is required to enter a room
+            if (roomName) {
+                window.location.pathname = '/chat/' + roomName + '/';
+            } else {
+                // Provide feedback that a room name is required
+                roomNameInput.focus();
+                roomNameInput.placeholder = "Room name is required!";
             }
         };
 
-        document.querySelector('#room-name-create').onclick = function(e) {
-            var roomName = document.querySelector('#room-name').value;
-            if(roomName != ""){
+        // Event listener for the 'Create Room' button
+        createButton.onclick = function(e) {
+            const roomName = roomNameInput.value.trim();
+            // A room name is required to create a room
+            if (roomName) {
                 window.location.pathname = '/chat/room/create/' + roomName + '/';
+            } else {
+                // You could add a visual cue here, like shaking the input field
+                roomNameInput.focus();
+                roomNameInput.placeholder = "Please enter a name to create a room!";
             }
         };
 
-        document.querySelector('#invite').onclick = function(e) {
+        // Event listener for the 'Invite a User' button
+        inviteButton.onclick = function(e) {
             window.location.pathname = '/chat/user/invite/';
         };
     </script>

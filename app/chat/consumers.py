@@ -24,11 +24,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
 
     @database_sync_to_async
-    def create_message(self, username, message, room):
+    def create_message(self, username, message, room, reply_to=None):
         User = get_user_model()
         user = User.objects.filter(username=username).first()
         room = Room.objects.filter(name=room).first()
-        Message.objects.create(sender=user, message=message, room=room)
+        Message.objects.create(sender=user, message=message, room=room, reply_to=reply_to)
         return 1
 
     @property
@@ -47,12 +47,21 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = text_data_json["message"]
         room_name = text_data_json['room_name']
 
-        # Send message to room group
+        # ✅ Save the message ONCE here
+        await self.create_message(
+            username=self.user.username,
+            message=message,
+            room=room_name
+        )
+
+        # Broadcast to everyone (no saving here)
         await self.channel_layer.group_send(
-            self.room_group_name, {"type": "chat_message",
-                                    "message": message, 
-                                    "username": self.user.username,
-                                    "room": room_name
+            self.room_group_name,
+            {
+                "type": "chat_message",
+                "message": message,
+                "username": self.user.username,
+                "room": room_name
             }
         )
 
@@ -60,10 +69,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def chat_message(self, event):
         message = event["message"]
         username = event['username']
-        room = event['room']
         auth_username = self.scope['user'].username
 
-        new_message = await self.create_message(username=username, message=message, room=room)
-
-        # Send message to WebSocket
-        await self.send(text_data=json.dumps({"message": message, "username": username, "auth_username": auth_username}))
+        # ✅ Just send — no DB write
+        await self.send(text_data=json.dumps({
+            "message": message,
+            "username": username,
+            "auth_username": auth_username
+        }))

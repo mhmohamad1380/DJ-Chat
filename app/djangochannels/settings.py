@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-(ipc*nxx5xz&*&o^2*n#0w56o7^+f96twf+s2elgei6n4f*rcp
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["chat.cyruson.ir", "0.0.0.0", "localhost"]
+ALLOWED_HOSTS = ["chat.cyruson.ir", "0.0.0.0", "localhost", '192.168.103.118']
 CSRF_TRUSTED_ORIGINS = ["https://chat.cyruson.ir"]
 
 

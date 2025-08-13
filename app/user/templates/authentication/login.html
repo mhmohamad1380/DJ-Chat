@@ -1,17 +1,111 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Simple transition for a smoother UI */
+        .btn {
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+        /* Style for form errors from Django */
+        .form-error {
+            color: #ef4444; /* red-500 */
+            font-size: 0.875rem; /* text-sm */
+            margin-top: 0.5rem;
+        }
+    </style>
 </head>
-<body>
-    <center>
-        <form method="post">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit">Login</button>
-          </form>
-    </center>
+<body class="bg-gray-100 dark:bg-gray-900">
+
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 space-y-6">
+            
+            <!-- Header -->
+            <div class="text-center">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Welcome Back!</h1>
+                <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Sign in to continue to Chat Central.</p>
+            </div>
+
+            <!-- Login Form -->
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+
+                <!-- Display Non-Field Errors -->
+                {% if form.non_field_errors %}
+                    <div class="bg-red-100 dark:bg-red-900/50 border-l-4 border-red-500 text-red-700 dark:text-red-300 p-4 rounded-lg" role="alert">
+                        {% for error in form.non_field_errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <!-- Username Field -->
+                <div>
+                    <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Username</label>
+                    <div class="mt-1">
+                        <input id="{{ form.username.id_for_label }}" name="{{ form.username.html_name }}" type="text" autocomplete="username" required
+                               class="appearance-none rounded-lg relative block w-full px-4 py-3 border {{ form.username.errors|yesno:'border-red-500,border-gray-300' }} dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+                    {% if form.username.errors %}
+                        <div class="form-error">
+                            {% for error in form.username.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Password Field -->
+                <div>
+                    <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+                    <div class="mt-1">
+                         <input id="{{ form.password.id_for_label }}" name="{{ form.password.html_name }}" type="password" autocomplete="current-password" required
+                               class="appearance-none rounded-lg relative block w-full px-4 py-3 border {{ form.password.errors|yesno:'border-red-500,border-gray-300' }} dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+                     {% if form.password.errors %}
+                        <div class="form-error">
+                            {% for error in form.password.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Submit Button -->
+                <div>
+                    <button type="submit" class="btn w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Login
+                    </button>
+                </div>
+            </form>
+
+            <!-- Sign up Link -->
+            <div class="text-center text-sm pt-4 border-t border-gray-200 dark:border-gray-700">
+                <p class="text-gray-600 dark:text-gray-400">
+                    Don't have an account?
+                    <a href="/signup/" class="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">
+                        Sign up
+                    </a>
+                </p>
+            </div>
+
+        </div>
+    </div>
+
 </body>
 </html>
