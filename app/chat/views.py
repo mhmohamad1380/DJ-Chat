@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http.response import Http404, HttpResponse, HttpResponseForbidden
 from .models import Room, Message
 from slugify import slugify
@@ -14,25 +14,52 @@ def index(request):
         return redirect("/user/register/")
     return render(request, "chat/index.html")
 
+
+
 @ratelimit(key="user_or_ip", rate="10/m")
 def room(request, room_name):
-    room = Room.objects.filter(name__iexact=room_name)
+    # Require auth
     if not request.user.is_authenticated:
         return redirect("/user/register/")
-    if not room.exists():
-        raise Http404("this room does not exist!")
-    
-    if not request.user in room.first().granted_users.all():
-        return HttpResponse("You do not have access!")
-    
-    messages = Message.objects.filter(room__name=room_name).order_by('created_at').all()
-    messages = [
+
+    # Get room (case-insensitive), with granted users prefetched
+    try:
+        room = Room.objects.prefetch_related("granted_users").get(name__iexact=room_name)
+    except Room.DoesNotExist:
+        return render(request, 'chat/404.html')
+
+    # Access control (efficient membership check)
+    if not room.granted_users.filter(pk=request.user.pk).exists():
+        return render(request, 'chat/404.html')
+
+    # Pull messages with everything the template needs (efficiently)
+    messages_qs = (
+        Message.objects.filter(room=room)
+        .select_related("room", "sender", "reply_to", "reply_to__sender")
+        .order_by("created_at")
+    )
+
+    # Decrypt text for display while keeping model instances
+    messages = list(messages_qs)
+    for m in messages:
+        try:
+            # Show decrypted message in the template via {{ message.message }}
+            m.message = m.get_decrypted_message()
+            if m.reply_to:
+                m.reply_to.message = m.reply_to.get_decrypted_message()
+        except Exception:
+            # Fallback to stored (possibly plaintext) value
+            pass
+
+    return render(
+        request,
+        "chat/room.html",
         {
-            "sender": message.sender,
-            "message": message.get_decrypted_message()
-        } for message in messages
-    ]
-    return render(request, "chat/room.html", {"room_name": room_name, "messages": messages, "username": str(request.user.username)})
+            "room_name": room.name,
+            "messages": messages,                 # model instances (reply_to available)
+            "username": str(request.user.username),
+        },
+    )
 
 
 def home_redirect(request):
@@ -55,7 +82,7 @@ def create_room(request, room_name):
     room.granted_users.set([request.user])
 
 
-    return HttpResponse(f"the room with name: {room.name} has successfully created!")
+    return render(request, 'chat/200.html')
 
 def user_rooms_list(request):
     if not request.user.is_authenticated:

@@ -32,6 +32,12 @@
             padding: 0;
             margin-top: 0.5rem;
         }
+        .validator-item.valid {
+            color: #22c55e; /* green-500 */
+        }
+        .validator-item.invalid {
+            color: #ef4444; /* red-500 */
+        }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900">
@@ -63,11 +69,42 @@
                     <div>
                         <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ field.label }}</label>
                         <div class="mt-1">
-                            <!-- FIX: Manually construct the input to apply classes correctly -->
                             <input type="{{ field.widget_type }}" name="{{ field.html_name }}" id="{{ field.id_for_label }}"
                                    class="appearance-none rounded-lg relative block w-full px-4 py-3 border {% if field.errors %}border-red-500{% else %}border-gray-300 dark:border-gray-600{% endif %} placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                    {% if field.field.required %}required{% endif %}>
                         </div>
+
+                        <!-- Live Password Validator for the password field -->
+                        {% if field.name == 'password' or field.name == 'password1' %}
+                        <div id="password-validator" class="mt-2 text-sm text-gray-500 dark:text-gray-400 space-y-1">
+                            <p id="length-check" class="validator-item invalid flex items-center">
+                                <svg class="check-icon hidden w-4 h-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.052-.143Z" clip-rule="evenodd"/></svg>
+                                <svg class="cross-icon w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clip-rule="evenodd"/></svg>
+                                At least 8 characters
+                            </p>
+                            <p id="uppercase-check" class="validator-item invalid flex items-center">
+                                <svg class="check-icon hidden w-4 h-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.052-.143Z" clip-rule="evenodd"/></svg>
+                                <svg class="cross-icon w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clip-rule="evenodd"/></svg>
+                                At least one uppercase letter
+                            </p>
+                            <p id="lowercase-check" class="validator-item invalid flex items-center">
+                                <svg class="check-icon hidden w-4 h-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.052-.143Z" clip-rule="evenodd"/></svg>
+                                <svg class="cross-icon w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clip-rule="evenodd"/></svg>
+                                At least one lowercase letter
+                            </p>
+                            <p id="number-check" class="validator-item invalid flex items-center">
+                                <svg class="check-icon hidden w-4 h-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.052-.143Z" clip-rule="evenodd"/></svg>
+                                <svg class="cross-icon w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clip-rule="evenodd"/></svg>
+                                At least one number
+                            </p>
+                            <p id="special-check" class="validator-item invalid flex items-center">
+                                <svg class="check-icon hidden w-4 h-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.052-.143Z" clip-rule="evenodd"/></svg>
+                                <svg class="cross-icon w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clip-rule="evenodd"/></svg>
+                                At least one special character
+                            </p>
+                        </div>
+                        {% endif %}
+
                         {% if field.help_text %}
                             <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ field.help_text|safe }}</p>
                         {% endif %}
@@ -95,7 +132,7 @@
             <div class="text-center text-sm pt-4 border-t border-gray-200 dark:border-gray-700">
                 <p class="text-gray-600 dark:text-gray-400">
                     Already have an account?
-                    <a href="/login/" class="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">
+                    <a href="/user/login/" class="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">
                         Login
                     </a>
                 </p>
@@ -103,6 +140,52 @@
 
         </div>
     </div>
+    <script>
+        // Find the password input field. It's often named 'password' or 'password1' by Django.
+        const passwordInput = document.getElementById('id_password1') || document.getElementById('id_password');
+        
+        if (passwordInput) {
+            const validatorItems = {
+                length: document.getElementById('length-check'),
+                uppercase: document.getElementById('uppercase-check'),
+                lowercase: document.getElementById('lowercase-check'),
+                number: document.getElementById('number-check'),
+                special: document.getElementById('special-check')
+            };
 
+            const validations = {
+                length: (val) => val.length >= 8,
+                uppercase: (val) => /[A-Z]/.test(val),
+                lowercase: (val) => /[a-z]/.test(val),
+                number: (val) => /[0-9]/.test(val),
+                special: (val) => /[!@#$%^&*(),.?":{}|<>]/.test(val)
+            };
+
+            const updateValidatorUI = (element, isValid) => {
+                const checkIcon = element.querySelector('.check-icon');
+                const crossIcon = element.querySelector('.cross-icon');
+                if (isValid) {
+                    element.classList.remove('invalid');
+                    element.classList.add('valid');
+                    checkIcon.classList.remove('hidden');
+                    crossIcon.classList.add('hidden');
+                } else {
+                    element.classList.remove('valid');
+                    element.classList.add('invalid');
+                    checkIcon.classList.add('hidden');
+                    crossIcon.classList.remove('hidden');
+                }
+            };
+
+            passwordInput.addEventListener('input', () => {
+                const password = passwordInput.value;
+                updateValidatorUI(validatorItems.length, validations.length(password));
+                updateValidatorUI(validatorItems.uppercase, validations.uppercase(password));
+                updateValidatorUI(validatorItems.lowercase, validations.lowercase(password));
+                updateValidatorUI(validatorItems.number, validations.number(password));
+                updateValidatorUI(validatorItems.special, validations.special(password));
+            });
+        }
+    </script>
 </body>
 </html>

@@ -1,21 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat: {{ room_name }}</title>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Inter -->
+    <!-- Google Fonts: Inter for English UI -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Emoji Picker Web Component -->
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
     <style>
         /* Custom styles for a more polished experience */
         body {
             font-family: 'Inter', sans-serif;
-            /* Prevent the whole page from scrolling on mobile */
-            overflow: hidden;
         }
 
         /* Custom scrollbar for a cleaner look in WebKit browsers */
@@ -26,11 +26,8 @@
             background: transparent;
         }
         #chat-log::-webkit-scrollbar-thumb {
-            background-color: rgba(0, 0, 0, 0.2);
-            border-radius: 20px;
-        }
-        .dark #chat-log::-webkit-scrollbar-thumb {
             background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
         }
 
         /* Animation for new messages */
@@ -39,63 +36,117 @@
             to { opacity: 1; transform: translateY(0); }
         }
         .message-animate {
-            animation: fadeInSlideUp 0.3s ease-out forwards;
+            animation: fadeInSlideUp .3s ease-out forwards;
+        }
+        
+        /* Highlight animation for scrolled-to message */
+        @keyframes highlight {
+            0% { background-color: rgba(56, 189, 248, 0.3); } /* bg-sky-400/30 */
+            100% { background-color: transparent; }
+        }
+        .highlight-message {
+            animation: highlight 1.5s ease-out;
+        }
+
+        /* Styling for the emoji picker component */
+        emoji-picker {
+            --background: #17212b;
+            --border-color: #0e1621;
+            --input-background-color: #0e1621;
+            --input-font-color: #ffffff;
+            --indicator-color: #5288c1;
+            --outline-color: #5288c1;
+        }
+        
+        /* Class for smooth transition when snapping back */
+        .message-content-wrapper.transitioning {
+            transition: transform 0.2s ease-out;
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-sky-400 to-blue-600">
+<body class="h-full bg-[#0e1621]">
 
     <!-- This div centers the container on desktop. On mobile, it's effectively invisible. -->
-    <div class="md:min-h-screen md:flex md:items-center md:justify-center md:p-4">
+    <div class="h-full md:flex md:items-center md:justify-center md:p-4">
         <!-- Mobile Screen Container: Full screen on mobile, constrained and styled on desktop -->
-        <div class="w-full h-screen flex flex-col bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl md:max-w-sm md:h-[90vh] md:max-h-[800px] md:rounded-3xl md:shadow-2xl overflow-hidden md:border md:border-white/20">
+        <div class="w-full h-full flex flex-col bg-[#0e1621] md:max-w-sm md:h-[90vh] md:max-h-[800px] md:rounded-3xl md:shadow-2xl overflow-hidden">
             
             <!-- Header (Fixed) -->
-            <header class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-4 flex items-center justify-between z-10 flex-shrink-0 border-b border-white/20">
-                <a href="/" class="text-blue-600 dark:text-blue-400 hover:text-blue-500 flex items-center group">
+            <header class="bg-[#17212b] p-4 flex items-center justify-between z-10 flex-shrink-0">
+                <a href="/" id="back-button" class="text-sky-400 hover:text-sky-300 flex items-center group">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 0 1 0 1.414L9.414 10l3.293 3.293a1 1 0 0 1-1.414 1.414l-4-4a1 1 0 0 1 0-1.414l4-4a1 1 0 0 1 1.414 0z" clip-rule="evenodd"/>
                     </svg>
-                    <span class="font-medium text-sm">Rooms</span>
+                    <span class="font-medium text-sm">Exit</span>
                 </a>
-                <h1 class="text-md font-bold text-gray-800 dark:text-white truncate px-2">{{ room_name }}</h1>
+                <h1 class="text-md font-bold text-white truncate px-2">{{ room_name }}</h1>
                 <div class="w-16"></div> <!-- Spacer -->
             </header>
 
             <!-- Chat Log (Scrollable) -->
-            <main id="chat-log" class="flex-1 p-4 overflow-y-auto space-y-4">
+            <main id="chat-log" class="flex-1 p-3 overflow-y-auto space-y-5 transition-all duration-300">
                 <!-- Messages are rendered by Django on initial load -->
                 {% for message in messages %}
-                    {% if message.sender.username == username %}
-                        <!-- My Message -->
-                        <div class="flex justify-end">
-                            <div class="bg-blue-500 text-white rounded-xl rounded-br-lg px-4 py-2 max-w-[85%] shadow" style="word-break: break-word;">
-                                <p>{{ message.message }}</p>
+                    <div class="flex flex-col {% if message.sender.username == username %}items-end{% else %}items-start{% endif %}" data-message-id="{{ message.id }}" data-username="{{ message.sender.username }}">
+                        <div class="relative w-full flex {% if message.sender.username == username %}justify-end{% else %}justify-start{% endif %}">
+                            <div class="absolute inset-y-0 flex items-center {% if message.sender.username == username %}right-0 pr-4{% else %}left-0 pl-4{% endif %} reply-icon-container opacity-0">
+                                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M15 10a.75.75 0 0 1-.75.75H7.707l2.293 2.293a.75.75 0 1 1-1.06 1.06l-3.5-3.5a.75.75 0 0 1 0-1.06l3.5-3.5a.75.75 0 1 1 1.06 1.06L7.707 9.25H14.25A.75.75 0 0 1 15 10Z" clip-rule="evenodd"></path></svg>
+                            </div>
+                            <div class="message-content-wrapper">
+                                <div class="relative {% if message.sender.username == username %}bg-[#2b5278]{% else %}bg-[#182533]{% endif %} text-white rounded-xl px-3 py-2 max-w-[85vw] md:max-w-[85%] shadow message-content" style="word-break: break-word;">
+                                    <p class="font-bold text-sm {% if message.sender.username == username %}text-sky-300{% else %}text-sky-400{% endif %}">{{ message.sender.username }}</p>
+                                    {% if message.reply_to %}
+                                    <div data-reply-target-id="{{ message.reply_to.id }}" class="reply-stub cursor-pointer bg-black/20 border-l-2 border-sky-400 pl-2 text-white/90 text-xs my-2 py-1">
+                                        <p class="font-bold text-sky-400">{{ message.reply_to.sender.username }}</p>
+                                        <p class="truncate">{{ message.reply_to.message }}</p>
+                                    </div>
+                                    {% endif %}
+                                    <p class="mt-1 message-text">{{ message.message }}</p>
+                                    <div class="flex items-center justify-end gap-3 mt-1 text-xs text-white/60">
+                                        <span>{{ message.created_at|date:"H:i" }}</span>
+                                        <button type="button" data-reply-id="{{ message.id }}" class="reply-button font-semibold hover:underline">Reply</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    {% else %}
-                        <!-- Other's Message -->
-                        <div class="flex justify-start">
-                            <div class="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-xl rounded-bl-lg px-4 py-2 max-w-[85%] shadow" style="word-break: break-word;">
-                                <p class="font-bold text-sm text-blue-500 dark:text-blue-400">{{ message.sender.username }}</p>
-                                <p class="mt-1">{{ message.message }}</p>
-                            </div>
-                        </div>
-                    {% endif %}
+                    </div>
                 {% endfor %}
             </main>
 
-            <!-- Message Input (Fixed) -->
-            <footer class="p-3 flex-shrink-0 bg-white/10 backdrop-blur-sm border-t border-white/20">
-                <form id="chat-form" class="flex items-center space-x-3">
-                    <input id="chat-message-input" type="text" placeholder="Type a message..." autocomplete="off"
-                           class="flex-1 appearance-none rounded-full px-5 py-3 border border-gray-300/70 dark:border-gray-600/70 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white/80 dark:bg-gray-700/80 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow duration-200">
-                    <button id="chat-message-submit" type="submit" class="inline-flex items-center justify-center rounded-full h-12 w-12 bg-blue-500 text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform duration-200 active:scale-90 flex-shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                        </svg>
+            <!-- Footer -->
+            <footer class="relative flex-shrink-0 bg-[#17212b]">
+                <!-- Reply Context Bar -->
+                <div id="reply-context-bar" class="hidden p-2 px-4 text-sm border-b border-black/20">
+                    <div class="flex justify-between items-center gap-2">
+                        <div class="flex-1 overflow-hidden">
+                            <p class="font-bold text-sky-400">Replying to <span id="reply-username"></span></p>
+                            <p id="reply-text" class="text-white/70 truncate"></p>
+                        </div>
+                        <button id="cancel-reply-btn" type="button" class="p-1 rounded-full hover:bg-black/20">
+                            <svg class="w-5 h-5 text-white/70" fill="currentColor" viewBox="0 0 20 20"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" clip-rule="evenodd"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="p-3 flex items-center space-x-3">
+                    <button id="emoji-button" type="button" class="p-2 rounded-full text-gray-400 hover:text-sky-400 hover:bg-black/20">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2Zm0 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm-3.5 6a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm7 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm-5.25 4.25a.75.75 0 0 1 1.5.04c.188 1.25.422 2.22.678 2.926a.75.75 0 0 1-1.416.508c-.2-.558-.4-1.35-.562-2.434a.75.75 0 0 1 .8-.8Z"/></svg>
                     </button>
-                </form>
+                    <form id="chat-form" class="flex-1 flex items-center space-x-3">
+                        <input id="chat-message-input" type="text" placeholder="Write a message..." autocomplete="off"
+                               class="flex-1 appearance-none rounded-full px-5 py-2 border-none placeholder-gray-400 text-white bg-[#0e1621] focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <button id="chat-message-submit" type="submit"
+                                class="inline-flex items-center justify-center rounded-full h-10 w-10 bg-sky-500 text-white hover:bg-sky-600 focus:outline-none flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- Emoji Picker Panel (now sits below the form) -->
+                <div id="emoji-picker-container" class="h-0 transition-all duration-300 ease-in-out overflow-hidden">
+                     <emoji-picker class="w-full h-64 md:h-72"></emoji-picker>
+                </div>
             </footer>
         </div>
     </div>
@@ -104,74 +155,322 @@
     {{ username|json_script:"auth-username" }}
 
     <script>
-        const roomName = JSON.parse(document.getElementById('room-name').textContent);
-        const authUsername = JSON.parse(document.getElementById('auth-username').textContent);
+        // --- DOM refs ---
+        const roomNameEl = document.getElementById('room-name');
+        const roomName = roomNameEl ? JSON.parse(roomNameEl.textContent) : '';
+
+        const authUsernameEl = document.getElementById('auth-username');
+        const authUsername = authUsernameEl ? JSON.parse(authUsernameEl.textContent) : '';
+
         const chatLog = document.getElementById('chat-log');
         const chatForm = document.getElementById('chat-form');
         const messageInput = document.getElementById('chat-message-input');
+        
+        // Reply refs
+        const replyContextBar = document.getElementById('reply-context-bar');
+        const replyUsernameEl = document.getElementById('reply-username');
+        const replyTextEl = document.getElementById('reply-text');
+        const cancelReplyBtn = document.getElementById('cancel-reply-btn');
+        
+        // Emoji refs
+        const emojiButton = document.getElementById('emoji-button');
+        const emojiPickerContainer = document.getElementById('emoji-picker-container');
+        const emojiPicker = document.querySelector('emoji-picker');
+
+        // Back button ref
+        const backButton = document.getElementById('back-button');
+
+        // --- State ---
+        let replyingToMessageId = null;
+        let isEmojiPickerOpen = false;
+
+        // --- Emojis ---
+        function showEmojiPicker() {
+            if (isEmojiPickerOpen) return;
+            isEmojiPickerOpen = true;
+            history.pushState({ emojiOpen: true }, '', '#emoji');
+            messageInput.blur(); // Hide the keyboard
+            emojiPickerContainer.style.height = '18rem'; // h-72
+            // chatLog.style.marginBottom = '18rem';
+            scrollToBottom();
+        }
+
+        function _hideEmojiPickerUI() {
+            isEmojiPickerOpen = false;
+            emojiPickerContainer.style.height = '0px';
+            chatLog.style.marginBottom = '0px';
+        }
+
+        function hideEmojiPicker() {
+            if (!isEmojiPickerOpen) return;
+            history.back();
+        }
+
+        function toggleEmojiPicker() {
+            if (isEmojiPickerOpen) {
+                hideEmojiPicker();
+            } else {
+                showEmojiPicker();
+            }
+        }
+
+        function insertEmoji(emoji) {
+            const start = messageInput.selectionStart;
+            const end = messageInput.selectionEnd;
+            const text = messageInput.value;
+            messageInput.value = text.substring(0, start) + emoji + text.substring(end);
+            messageInput.selectionStart = messageInput.selectionEnd = start + emoji.length;
+        }
+
+        emojiButton.addEventListener('click', toggleEmojiPicker);
+
+        emojiPicker.addEventListener('emoji-click', event => {
+            insertEmoji(event.detail.unicode);
+        });
+        
+        messageInput.addEventListener('focus', () => {
+             if (isEmojiPickerOpen) {
+                hideEmojiPicker();
+            }
+        });
+
+        // --- Reply Logic ---
+        function handleReplyClick(messageId) {
+            const messageElement = document.querySelector(`[data-message-id='${messageId}']`);
+            if (!messageElement) return;
+
+            const username = messageElement.dataset.username || '';
+            const text = messageElement.querySelector('.message-text')?.textContent || '';
+
+            replyingToMessageId = messageId;
+            replyUsernameEl.textContent = username;
+            replyTextEl.textContent = text;
+            replyContextBar.classList.remove('hidden');
+            messageInput.focus();
+        }
+
+        function cancelReply() {
+            replyingToMessageId = null;
+            replyContextBar.classList.add('hidden');
+        }
+
+        cancelReplyBtn.addEventListener('click', cancelReply);
 
         function scrollToBottom() {
             chatLog.scrollTo({ top: chatLog.scrollHeight, behavior: 'smooth' });
         }
+        setTimeout(() => { chatLog.scrollTop = chatLog.scrollHeight; }, 100);
 
-        setTimeout(() => {
-            chatLog.scrollTop = chatLog.scrollHeight;
-        }, 100);
-
+        // --- WebSocket ---
+        const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
         const chatSocket = new WebSocket(
-            (window.location.protocol === 'https:' ? 'wss://' : 'ws://')
-            + window.location.host
-            + '/ws/chat/'
-            + roomName
-            + '/'
+            `${wsScheme}://${window.location.host}/ws/chat/${encodeURIComponent(roomName)}/`
         );
+        
+        function renderIncomingMessage(data) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'flex flex-col message-animate';
+            wrapper.dataset.messageId = data.id;
+            wrapper.dataset.username = data.username;
 
-        chatSocket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-            const messageContainer = document.createElement('div');
-            const messageBubble = document.createElement('div');
+            const mine = data.username === authUsername;
+            wrapper.classList.add(mine ? 'items-end' : 'items-start');
+
+            const swipeWrapper = document.createElement('div');
+            swipeWrapper.className = `relative w-full flex ${mine ? 'justify-end' : 'justify-start'}`;
+
+            const iconContainer = document.createElement('div');
+            iconContainer.className = `absolute inset-y-0 flex items-center reply-icon-container opacity-0 ${mine ? 'right-0 pr-4' : 'left-0 pl-4'}`;
+            iconContainer.innerHTML = `<svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M15 10a.75.75 0 0 1-.75.75H7.707l2.293 2.293a.75.75 0 1 1-1.06 1.06l-3.5-3.5a.75.75 0 0 1 0-1.06l3.5-3.5a.75.75 0 1 1 1.06 1.06L7.707 9.25H14.25A.75.75 0 0 1 15 10Z" clip-rule="evenodd"></path></svg>`;
             
-            messageContainer.classList.add('message-animate');
+            const bubbleWrapper = document.createElement('div');
+            bubbleWrapper.className = 'message-content-wrapper';
 
-            if (data.username === authUsername) {
-                messageContainer.className += ' flex justify-end';
-                messageBubble.className = 'bg-blue-500 text-white rounded-xl rounded-br-lg px-4 py-2 max-w-[85%] shadow';
-                messageBubble.innerHTML = `<p>${data.message}</p>`;
-            } else {
-                messageContainer.className += ' flex justify-start';
-                messageBubble.className = 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-xl rounded-bl-lg px-4 py-2 max-w-[85%] shadow';
-                messageBubble.innerHTML = `<p class="font-bold text-sm text-blue-500 dark:text-blue-400">${data.username}</p><p class="mt-1">${data.message}</p>`;
+            const bubble = document.createElement('div');
+            bubble.className = `relative text-white rounded-xl px-3 py-2 max-w-[85vw] md:max-w-[85%] shadow message-content ${mine ? 'bg-[#2b5278]' : 'bg-[#182533]'}`;
+            bubble.style.wordBreak = 'break-word';
+
+            const usernameColor = mine ? 'text-sky-300' : 'text-sky-400';
+            let messageHTML = `<p class="font-bold text-sm ${usernameColor}">${data.username}</p>`;
+
+            if (data.reply_to) {
+                messageHTML += `<div data-reply-target-id="${data.reply_to}" class="reply-stub cursor-pointer bg-black/20 border-l-2 border-sky-400 pl-2 text-white/90 text-xs my-2 py-1"><p class="font-bold text-sky-400">${data.reply_to_username || ''}</p><p class="truncate">${data.reply_to_preview || ''}</p></div>`;
             }
+
+            const messageTime = new Date(data.created_at || Date.now()).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+            messageHTML += `<p class="mt-1 message-text">${data.message}</p><div class="flex items-center justify-end gap-3 mt-1 text-xs text-white/60"><span>${messageTime}</span><button type="button" data-reply-id="${data.id}" class="reply-button font-semibold hover:underline">Reply</button></div>`;
             
-            messageBubble.style.wordBreak = 'break-word';
-            messageContainer.appendChild(messageBubble);
-            chatLog.appendChild(messageContainer);
-            
-            scrollToBottom();
+            bubble.innerHTML = messageHTML;
+            bubbleWrapper.appendChild(bubble);
+            swipeWrapper.appendChild(iconContainer);
+            swipeWrapper.appendChild(bubbleWrapper);
+            wrapper.appendChild(swipeWrapper);
+            chatLog.appendChild(wrapper);
+        }
+
+        // --- Socket events ---
+        chatSocket.onmessage = function(e) {
+            try {
+                const data = JSON.parse(e.data);
+                renderIncomingMessage(data);
+                scrollToBottom();
+            } catch (error) {
+                console.error("Failed to parse incoming message:", error);
+            }
         };
 
         chatSocket.onclose = function(e) {
-            console.error('Chat socket closed unexpectedly');
-            const disconnectedMessage = document.createElement('div');
-            disconnectedMessage.className = 'text-center text-xs text-gray-500 dark:text-gray-400 py-2';
-            disconnectedMessage.textContent = 'Connection lost. Please refresh.';
-            chatLog.appendChild(disconnectedMessage);
+            console.error('Chat socket closed', e.code, e.reason);
+            const msg = document.createElement('div');
+            msg.className = 'text-center text-xs text-gray-500 py-2';
+            msg.textContent = 'Connection lost. Please refresh.';
+            chatLog.appendChild(msg);
             scrollToBottom();
         };
 
-        messageInput.focus();
+        // --- Event Delegation ---
+        chatLog.addEventListener('click', function(e) {
+            const replyButton = e.target.closest('.reply-button');
+            if (replyButton) {
+                const messageId = replyButton.dataset.replyId;
+                if (messageId) handleReplyClick(messageId);
+                return;
+            }
+            
+            const replyStub = e.target.closest('.reply-stub');
+            if (replyStub) {
+                const targetId = replyStub.dataset.replyTargetId;
+                const targetMessage = document.querySelector(`[data-message-id='${targetId}']`);
+                if (targetMessage) {
+                    targetMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    const messageBubble = targetMessage.querySelector('.message-content');
+                    if(messageBubble) {
+                        messageBubble.classList.add('highlight-message');
+                        setTimeout(() => {
+                            messageBubble.classList.remove('highlight-message');
+                        }, 1500);
+                    }
+                }
+            }
+        });
 
+        // --- Send message ---
         chatForm.addEventListener('submit', function(e) {
             e.preventDefault();
             const message = messageInput.value.trim();
-            if (message) {
-                chatSocket.send(JSON.stringify({
-                    'message': message,
-                    'room_name': roomName,
-                }));
-                messageInput.value = '';
+            if (!message) return;
+
+            chatSocket.send(JSON.stringify({
+                message,
+                room_name: roomName,
+                reply_to: replyingToMessageId ? parseInt(replyingToMessageId, 10) : null
+            }));
+
+            messageInput.value = '';
+            cancelReply();
+        });
+
+        // --- Back Button and History Logic ---
+        backButton.addEventListener('click', function(e) {
+            if (isEmojiPickerOpen) {
+                e.preventDefault(); // Stop navigation
+                hideEmojiPicker();
             }
         });
+
+        window.addEventListener('popstate', function(e) {
+            if (e.state && e.state.emojiOpen) {
+                // This state was pushed when we opened the picker
+            } else {
+                // This is a normal back navigation, or the user used the back button to close the picker
+                if (isEmojiPickerOpen) {
+                    _hideEmojiPickerUI();
+                }
+            }
+        });
+
+        // --- Swipe to Reply Logic ---
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let currentTarget = null;
+        let swiping = false;
+        const swipeThreshold = 60; // How many pixels to swipe to trigger reply
+
+        chatLog.addEventListener('touchstart', (e) => {
+            const target = e.target.closest('[data-message-id]');
+            if (!target) return;
+            
+            currentTarget = target;
+            touchStartX = e.targetTouches[0].clientX;
+            touchStartY = e.targetTouches[0].clientY;
+        }, { passive: true });
+
+        chatLog.addEventListener('touchmove', (e) => {
+            if (!currentTarget) return;
+
+            const touchCurrentX = e.targetTouches[0].clientX;
+            const touchCurrentY = e.targetTouches[0].clientY;
+            const diffX = touchCurrentX - touchStartX;
+            const diffY = touchCurrentY - touchStartY;
+
+            // Only start swipe if horizontal movement is greater than vertical
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                if (!swiping) {
+                    // Check if scrolling is happening, if so, don't swipe
+                    if (chatLog.scrollTop > 0 && chatLog.scrollTop < chatLog.scrollHeight - chatLog.clientHeight) {
+                        // It's likely a scroll, so we don't initiate a swipe
+                        return;
+                    }
+                }
+                swiping = true;
+                e.preventDefault(); // Prevent scrolling while swiping
+                
+                const isMyMessage = currentTarget.classList.contains('items-end');
+                const bubbleWrapper = currentTarget.querySelector('.message-content-wrapper');
+                const iconContainer = currentTarget.querySelector('.reply-icon-container');
+
+                // Swipe right for others' messages, left for mine
+                if ((!isMyMessage && diffX > 0) || (isMyMessage && diffX < 0)) {
+                    const swipeDistance = Math.min(Math.abs(diffX), swipeThreshold + 20);
+                    const translation = isMyMessage ? -swipeDistance : swipeDistance;
+                    const iconOpacity = Math.min(Math.abs(diffX) / swipeThreshold, 1);
+
+                    bubbleWrapper.style.transform = `translateX(${translation}px)`;
+                    iconContainer.style.opacity = iconOpacity;
+                }
+            }
+        }, { passive: false });
+
+        chatLog.addEventListener('touchend', (e) => {
+            if (!currentTarget || !swiping) {
+                currentTarget = null;
+                return;
+            }
+            
+            swiping = false;
+            const bubbleWrapper = currentTarget.querySelector('.message-content-wrapper');
+            const iconContainer = currentTarget.querySelector('.reply-icon-container');
+            const finalTransform = new WebKitCSSMatrix(window.getComputedStyle(bubbleWrapper).transform).m41;
+
+            // Check if swipe threshold was met
+            if (Math.abs(finalTransform) >= swipeThreshold) {
+                handleReplyClick(currentTarget.dataset.messageId);
+            }
+
+            // Snap back animation
+            bubbleWrapper.classList.add('transitioning');
+            bubbleWrapper.style.transform = 'translateX(0px)';
+            iconContainer.style.opacity = 0;
+            
+            bubbleWrapper.addEventListener('transitionend', () => {
+                bubbleWrapper.classList.remove('transitioning');
+            }, { once: true });
+
+            currentTarget = null;
+        });
+
+        // --- Initial Focus ---
+        messageInput.focus();
     </script>
 </body>
 </html>
