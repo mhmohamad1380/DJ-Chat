@@ -1,6 +1,6 @@
 # DJ-Chat
 
-[One-liner describing the project—e.g., "A real-time Django chat app with private & group messaging"]
+A real-time Django chat app with private & group messaging
 
 ## Features
 - User authentication (signup, login, logout)
