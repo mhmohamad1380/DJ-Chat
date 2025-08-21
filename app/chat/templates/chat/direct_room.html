@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Chat with {{ other_user.username }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+  <style>
+    body { font-family:'Inter',sans-serif }
+    :root,[data-theme="dark"]{
+      --bg-main:#0e1621;--bg-secondary:#17212b;--bg-input:#0e1621;--bg-hover:rgb(255 255 255/.1);
+      --text-primary:#fff;--text-secondary:rgb(255 255 255/.7);--text-tertiary:rgb(255 255 255/.6);
+      --text-accent:#38bdf8;--border-color:rgb(255 255 255/.1);
+      --bubble-sent-bg:#2b5278;--bubble-received-bg:#182533;--bubble-sent-user:#7dd3fc;--bubble-received-user:#38bdf8;
+      --reply-stub-bg:rgb(0 0 0/.2);--reply-stub-border:#38bdf8;--ring-focus:#0ea5e9;
+    }
+    [data-theme="light"]{
+      --bg-main:#f8fafc;--bg-secondary:#fff;--bg-input:#f1f5f9;--bg-hover:rgb(0 0 0/.05);
+      --text-primary:#1e293b;--text-secondary:#64748b;--text-tertiary:#94a3b8;--text-accent:#0284c7;--border-color:rgb(0 0 0/.1);
+      --bubble-sent-bg:#bae6fd;--bubble-received-bg:#e2e8f0;--bubble-sent-user:#0c4a6e;--bubble-received-user:#0369a1;
+      --reply-stub-bg:#e0f2fe;--reply-stub-border:#38bdf8;--ring-focus:#38bdf8;
+    }
+    .themed-hover:hover{background-color:var(--bg-hover)}
+    #chat-log::-webkit-scrollbar{width:6px}
+    #chat-log::-webkit-scrollbar-thumb{background-color:var(--text-tertiary);border-radius:20px}
+    .message-wrapper.mine{flex-direction:row-reverse}
+    @keyframes fadeInSlideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+    .message-animate{animation:fadeInSlideUp .3s ease-out forwards}
+    @keyframes highlight{0%{background:rgba(56,189,248,.3)}100%{background:transparent}}
+    .highlight-message{animation:highlight 1.5s ease-out}
+  </style>
+</head>
+<body class="h-full">
+  <div class="h-full md:flex md:items-center md:justify-center md:p-4">
+    <div class="relative w-full h-full flex flex-col bg-[var(--bg-main)] md:max-w-sm md:h-[90vh] md:max-h-[800px] md:rounded-3xl md:shadow-2xl overflow-hidden">
+
+      <!-- Header -->
+      <header class="bg-[var(--bg-secondary)] p-4 flex items-center justify-between z-20 flex-shrink-0">
+        <a href="/chat/home" id="back-button" class="text-[var(--text-accent)] hover:opacity-80 flex items-center group">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 0 1 0 1.414L9.414 10l3.293 3.293a1 1 0 0 1-1.414 1.414l-4-4a1 1 0 0 1 0-1.414l4-4a1 1 0 0 1 1.414 0z" clip-rule="evenodd"/></svg>
+        </a>
+        <div class="text-center">
+          <h1 class="text-md font-bold text-[var(--text-primary)] truncate">{{ other_user.username }}</h1>
+          <p class="text-xs text-[var(--text-secondary)]">online</p>
+        </div>
+        <div class="flex items-center gap-1">
+          <button id="theme-btn" type="button" class="p-2 rounded-full text-[var(--text-secondary)] themed-hover">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 4a6 6 0 1 0 0 12 6 6 0 0 0 0-12ZM1.5 10a8.5 8.5 0 1 1 17 0 8.5 8.5 0 0 1-17 0Z M10 1.25a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 10 1.25Zm0 14a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75ZM3.646 3.646a.75.75 0 0 1 1.06 0l1.061 1.06a.75.75 0 0 1-1.06 1.061L3.646 4.707a.75.75 0 0 1 0-1.06Zm10.607 10.607a.75.75 0 0 1 1.06 0l1.061 1.06a.75.75 0 1 1-1.06 1.061l-1.061-1.06a.75.75 0 0 1 0-1.061ZM1.25 10a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 0 1.5h-1.5a.75.75 0 0 1-.75-.75Zm14 0a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 0 1.5h-1.5a.75.75 0 0 1-.75-.75Zm-1.893 5.657a.75.75 0 0 1 0-1.06l1.06-1.061a.75.75 0 1 1 1.06 1.06l-1.06 1.061a.75.75 0 0 1-1.06 0Zm-10.607-10.607a.75.75 0 0 1 0-1.06l1.06-1.061a.75.75 0 0 1 1.06 1.06l-1.06 1.061a.75.75 0 0 1-1.06 0Z"/></svg>
+          </button>
+
+          <div class="relative">
+            <button id="menu-btn" type="button" class="p-2 rounded-full text-[var(--text-secondary)] themed-hover">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 3a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM10 8.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM11.5 15.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0Z"/></svg>
+            </button>
+            <div id="dropdown-menu" class="hidden absolute right-0 mt-2 w-48 bg-[var(--bg-secondary)] rounded-md shadow-lg z-30 border border-[var(--border-color)]">
+              <div class="p-1">
+                <a href="#" id="delete-history-btn" class="block w-full text-left px-3 py-2 text-sm text-[var(--text-primary)] themed-hover rounded-md">Delete history</a>
+                <a href="#" id="undo-delete-btn" class="hidden w-full text-left px-3 py-2 text-sm text-[var(--text-accent)] themed-hover rounded-md">Undo Delete</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Messages -->
+      <div class="flex-1 relative">
+        <main id="chat-log" class="absolute inset-0 overflow-y-auto p-3 space-y-2">
+          {% for message in messages %}
+            {% ifchanged message.created_at.date %}
+            <div class="date-separator sticky top-2 z-10 flex justify-center my-4">
+              <div class="text-center text-xs text-[var(--text-primary)] bg-[var(--bg-secondary)] rounded-full px-3 py-1 shadow-sm">
+                <span>{{ message.created_at|date:"F j" }}</span>
+              </div>
+            </div>
+            {% endifchanged %}
+            <div class="w-full flex {% if message.sender.username == username %}justify-end{% else %}justify-start{% endif %}">
+              <div class="message-wrapper group flex items-end gap-2 {% if message.sender.username == username %}mine{% else %}other{% endif %}"
+                   data-message-id="{{ message.id }}"
+                   data-username="{{ message.sender.username }}"
+                   data-created-at="{{ message.created_at.isoformat }}">
+                <div class="relative text-[var(--text-primary)] rounded-xl px-3 py-2 max-w-[80vw] md:max-w-[80%] shadow message-content"
+                     style="word-break:break-word; background-color:{% if message.sender.username == username %}var(--bubble-sent-bg){% else %}var(--bubble-received-bg){% endif %};">
+                  {% if message.reply_to %}
+                  <div data-reply-target-id="{{ message.reply_to.id }}" class="reply-stub cursor-pointer bg-[var(--reply-stub-bg)] border-l-2 border-[var(--reply-stub-border)] pl-2 text-[var(--text-secondary)] text-xs my-2 py-1 text-left">
+                    <p class="font-bold" style="color:{% if message.sender.username == username %}var(--bubble-sent-user){% else %}var(--bubble-received-user){% endif %};">{{ message.reply_to.sender.username }}</p>
+                    <p class="truncate">{{ message.reply_to.message }}</p>
+                  </div>
+                  {% endif %}
+                  <p class="mt-1 message-text text-left">{{ message.message }}</p>
+                  <div class="text-right mt-1 text-xs text-[var(--text-tertiary)]">
+                    <span>{{ message.created_at|date:"H:i" }}</span>
+                  </div>
+                </div>
+                <button type="button" class="reply-icon-button flex-shrink-0 p-1 rounded-full text-[var(--text-secondary)] themed-hover opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M15 10a.75.75 0 0 1-.75.75H7.707l2.293 2.293a.75.75 0 1 1-1.06 1.06l-3.5-3.5a.75.75 0 0 1 0-1.06l3.5-3.5a.75.75 0 1 1 1.06 1.06L7.707 9.25H14.25A.75.75 0 0 1 15 10Z" clip-rule="evenodd"></path></svg>
+                </button>
+              </div>
+            </div>
+          {% endfor %}
+        </main>
+        <button id="go-to-bottom-btn" class="hidden absolute bottom-4 right-4 z-10 bg-sky-500 text-white rounded-full p-2 shadow-lg">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+        </button>
+      </div>
+
+      <!-- Composer -->
+      <footer class="relative flex-shrink-0 bg-[var(--bg-secondary)] z-10">
+        <div id="reply-context-bar" class="hidden p-2 px-4 text-sm border-t border-[var(--border-color)]">
+          <div class="flex justify-between items-center gap-2">
+            <div class="flex-1 overflow-hidden">
+              <p class="font-bold text-[var(--text-accent)]">Replying to <span id="reply-username"></span></p>
+              <p id="reply-text" class="text-[var(--text-secondary)] truncate"></p>
+            </div>
+            <button id="cancel-reply-btn" type="button" class="p-1 rounded-full themed-hover">
+              <svg class="w-5 h-5 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" clip-rule="evenodd"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="p-3 flex items-center space-x-3">
+          <button id="emoji-button" type="button" class="p-2 rounded-full text-[var(--text-secondary)] hover:text-[var(--text-accent)] themed-hover">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2Zm0 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm-3.5 6a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm7 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm-5.25 4.25a.75.75 0 0 1 1.5.04c.188 1.25.422 2.22.678 2.926a.75.75 0 0 1-1.416.508c-.2-.558-.4-1.35-.562-2.434a.75.75 0 0 1 .8-.8Z"/></svg>
+          </button>
+          <form id="chat-form" class="flex-1 flex items-center space-x-3">
+            <input id="chat-message-input" type="text" placeholder="Write a message..." autocomplete="off"
+                   class="flex-1 appearance-none rounded-full px-5 py-2 border-none placeholder-[var(--text-tertiary)] text-[var(--text-primary)] bg-[var(--bg-input)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)]" />
+            <button id="chat-message-submit" type="submit"
+                    class="inline-flex items-center justify-center rounded-full h-10 w-10 bg-sky-500 text-white hover:bg-sky-600 focus:outline-none flex-shrink-0">
+              <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
+            </button>
+          </form>
+        </div>
+
+        <div id="emoji-picker-container" class="h-0 transition-all duration-300 ease-in-out overflow-hidden">
+          <emoji-picker class="w-full h-64 md:h-72"></emoji-picker>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <div id="confirmation-modal" class="hidden fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4">
+    <div class="bg-[var(--bg-secondary)] rounded-lg p-6 shadow-xl w-full max-w-sm">
+      <h3 class="text-lg font-medium text-[var(--text-primary)]">Delete history?</h3>
+      <p class="mt-2 text-sm text-[var(--text-secondary)]">This will only hide history on this device.</p>
+      <div class="mt-4 flex justify-end gap-3">
+        <button id="modal-cancel-btn" class="px-4 py-2 rounded-md text-sm font-medium themed-hover">Cancel</button>
+        <button id="modal-confirm-btn" class="px-4 py-2 rounded-md text-sm font-medium bg-red-600 text-white hover:bg-red-700">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="theme-modal" class="hidden fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4">
+    <div id="theme-modal-content" class="bg-[var(--bg-secondary)] rounded-lg p-6 shadow-xl w-full max-w-sm">
+      <h3 class="text-lg font-medium text-[var(--text-primary)]">Choose a theme</h3>
+      <div class="grid grid-cols-2 gap-4 mt-6">
+        <button class="theme-option-btn flex flex-col items-center gap-2 p-2 rounded-lg themed-hover" data-theme="light">
+          <div class="w-full h-16 rounded-md p-2 flex flex-col gap-1 border border-slate-200" style="background-color:#f8fafc">
+            <div class="w-3/4 h-4 rounded-full ml-auto" style="background-color:#bae6fd"></div>
+            <div class="w-1/2 h-4 rounded-full" style="background-color:#e2e8f0"></div>
+          </div>
+          <span class="text-sm font-medium text-[var(--text-primary)]">Light</span>
+        </button>
+        <button class="theme-option-btn flex flex-col items-center gap-2 p-2 rounded-lg themed-hover" data-theme="dark">
+          <div class="w-full h-16 rounded-md p-2 flex flex-col gap-1 border border-slate-700" style="background-color:#0e1621">
+            <div class="w-3/4 h-4 rounded-full ml-auto" style="background-color:#2b5278"></div>
+            <div class="w-1/2 h-4 rounded-full" style="background-color:#182533"></div>
+          </div>
+          <span class="text-sm font-medium text-[var(--text-primary)]">Dark</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  {{ room_name|json_script:"room-name" }}
+  {{ username|json_script:"auth-username" }}
+
+  <script>
+    // DOM refs
+    const roomName = JSON.parse(document.getElementById('room-name').textContent);
+    const authUsername = JSON.parse(document.getElementById('auth-username').textContent);
+    const chatLog = document.getElementById('chat-log');
+    const chatForm = document.getElementById('chat-form');
+    const messageInput = document.getElementById('chat-message-input');
+    const replyContextBar = document.getElementById('reply-context-bar');
+    const replyUsernameEl = document.getElementById('reply-username');
+    const replyTextEl = document.getElementById('reply-text');
+    const cancelReplyBtn = document.getElementById('cancel-reply-btn');
+    const emojiButton = document.getElementById('emoji-button');
+    const emojiPickerContainer = document.getElementById('emoji-picker-container');
+    const emojiPicker = document.querySelector('emoji-picker');
+    const backButton = document.getElementById('back-button');
+    const menuBtn = document.getElementById('menu-btn');
+    const dropdownMenu = document.getElementById('dropdown-menu');
+    const deleteHistoryBtn = document.getElementById('delete-history-btn');
+    const undoDeleteBtn = document.getElementById('undo-delete-btn');
+    const confirmationModal = document.getElementById('confirmation-modal');
+    const modalCancelBtn = document.getElementById('modal-cancel-btn');
+    const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+    const goToBottomBtn = document.getElementById('go-to-bottom-btn');
+    const themeBtn = document.getElementById('theme-btn');
+    const themeModal = document.getElementById('theme-modal');
+
+    // State
+    let replyingToMessageId = null;
+    let isEmojiPickerOpen = false;
+    const deletedUntilKey = `deleted_until_${roomName}`;
+
+    // Theme
+    function applyTheme(theme){ document.documentElement.setAttribute('data-theme', theme); }
+    themeBtn.addEventListener('click',()=> themeModal.classList.remove('hidden'));
+    document.querySelectorAll('.theme-option-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{ applyTheme(btn.dataset.theme); localStorage.setItem('theme', btn.dataset.theme); themeModal.classList.add('hidden'); });
+    });
+    themeModal.addEventListener('click',(e)=>{ if(e.target===themeModal) themeModal.classList.add('hidden'); });
+
+    // Menu/Delete
+    function updateMenuButtons(){ const isDeleted = localStorage.getItem(deletedUntilKey)!==null; deleteHistoryBtn.classList.remove('hidden'); undoDeleteBtn.classList.toggle('hidden', !isDeleted); }
+    menuBtn.addEventListener('click',(e)=>{ e.stopPropagation(); updateMenuButtons(); dropdownMenu.classList.toggle('hidden'); });
+    deleteHistoryBtn.addEventListener('click',(e)=>{ e.preventDefault(); dropdownMenu.classList.add('hidden'); confirmationModal.classList.remove('hidden'); });
+    document.addEventListener('click',()=> dropdownMenu.classList.add('hidden'));
+    modalCancelBtn.addEventListener('click',()=> confirmationModal.classList.add('hidden'));
+    modalConfirmBtn.addEventListener('click',()=>{ localStorage.setItem(deletedUntilKey, new Date().toISOString()); applyHistoryFilter(); confirmationModal.classList.add('hidden'); });
+
+    // Emoji
+    function toggleEmojiPicker(){ isEmojiPickerOpen=!isEmojiPickerOpen; emojiPickerContainer.style.height = isEmojiPickerOpen ? '18rem' : '0px'; if(isEmojiPickerOpen) messageInput.blur(); }
+    function insertEmoji(emoji){ const {selectionStart,selectionEnd,value}=messageInput; messageInput.value = value.substring(0,selectionStart)+emoji+value.substring(selectionEnd); messageInput.selectionStart = messageInput.selectionEnd = selectionStart + emoji.length; }
+    emojiButton.addEventListener('click', toggleEmojiPicker);
+    emojiPicker?.addEventListener('emoji-click', e => insertEmoji(e.detail.unicode));
+    messageInput.addEventListener('focus',()=>{ if(isEmojiPickerOpen) toggleEmojiPicker(); });
+
+    // Replies
+    function handleReplyClick(id){
+      const el=document.querySelector(`[data-message-id='${id}']`); if(!el) return;
+      replyingToMessageId = id;
+      replyUsernameEl.textContent = el.dataset.username || '';
+      replyTextEl.textContent = el.querySelector('.message-text')?.textContent || '';
+      replyContextBar.classList.remove('hidden'); messageInput.focus();
+    }
+    cancelReplyBtn.addEventListener('click',()=>{ replyingToMessageId=null; replyContextBar.classList.add('hidden'); });
+
+    // Scroll helpers
+    function scrollToBottom(smooth=true){ chatLog.scrollTo({top:chatLog.scrollHeight, behavior: smooth?'smooth':'auto'}); }
+    chatLog.addEventListener('scroll',()=>{ const up = chatLog.scrollHeight - chatLog.scrollTop - chatLog.clientHeight > 200; goToBottomBtn.classList.toggle('hidden', !up); });
+    goToBottomBtn.addEventListener('click',()=> scrollToBottom());
+
+    // History filter
+    function applyHistoryFilter(){
+      const ts = localStorage.getItem(deletedUntilKey); if(!ts) return;
+      document.querySelectorAll('.message-wrapper').forEach(msg => { if(msg.dataset.createdAt < ts) msg.parentElement.remove(); });
+      document.querySelectorAll('.date-separator').forEach(sep => { if(!sep.nextElementSibling || sep.nextElementSibling.classList.contains('date-separator')) sep.remove(); });
+    }
+
+    // Render helper
+    function addDateSeparatorIfNeeded(d){
+      const last = document.querySelector('#chat-log .message-wrapper:last-of-type');
+      const newStr = d.toDateString();
+      let add = true;
+      if(last){ const lastStr = new Date(last.dataset.createdAt).toDateString(); if(newStr===lastStr) add=false; }
+      if(add){ const wrap=document.createElement('div'); wrap.className="date-separator sticky top-2 z-10 flex justify-center my-4";
+        const chip=document.createElement('div'); chip.className="text-center text-xs text-[var(--text-primary)] bg-[var(--bg-secondary)] rounded-full px-3 py-1 shadow-sm";
+        chip.innerHTML=`<span>${d.toLocaleDateString('en-US',{month:'long',day:'numeric'})}</span>`; wrap.appendChild(chip); chatLog.appendChild(wrap); }
+    }
+    function createMessageElement(data){
+      const ts = localStorage.getItem(deletedUntilKey); if(ts && data.created_at < ts) return;
+      addDateSeparatorIfNeeded(new Date(data.created_at));
+      const mine = data.username === authUsername;
+      const align = document.createElement('div'); align.className = `w-full flex ${mine?'justify-end':'justify-start'}`;
+      const wrap = document.createElement('div'); wrap.className = `message-wrapper group flex items-end gap-2 message-animate ${mine?'mine':'other'}`;
+      const bubble = document.createElement('div'); bubble.className = 'relative text-[var(--text-primary)] rounded-xl px-3 py-2 max-w-[80vw] md:max-w-[80%] shadow message-content';
+      bubble.style.wordBreak='break-word'; bubble.style.backgroundColor = mine? 'var(--bubble-sent-bg)':'var(--bubble-received-bg)';
+      let html = '';
+      if(data.reply_to){ const color = mine?'var(--bubble-sent-user)':'var(--bubble-received-user)';
+        html += `<div data-reply-target-id="${data.reply_to}" class="reply-stub cursor-pointer bg-[var(--reply-stub-bg)] border-l-2 border-[var(--reply-stub-border)] pl-2 text-[var(--text-secondary)] text-xs mb-2 py-1 text-left">
+          <p class="font-bold" style="color:${color};">${data.reply_to_username||''}</p>
+          <p class="truncate">${data.reply_to_message||''}</p>
+        </div>`;
+      }
+      const t = new Date(data.created_at||Date.now()).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false});
+      html += `<p class="message-text text-left">${data.message}</p><div class="text-right mt-1 text-xs text-[var(--text-tertiary)]"><span>${t}</span></div>`;
+      bubble.innerHTML = html;
+      const btn = document.createElement('button'); btn.type='button';
+      btn.className='reply-icon-button flex-shrink-0 p-1 rounded-full text-[var(--text-secondary)] themed-hover opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity';
+      btn.innerHTML = `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M15 10a.75.75 0 0 1-.75.75H7.707l2.293 2.293a.75.75 0 1 1-1.06 1.06l-3.5-3.5a.75.75 0 0 1 0-1.06l3.5-3.5a.75.75 0 1 1 1.06 1.06L7.707 9.25H14.25A.75.75 0 0 1 15 10Z" clip-rule="evenodd"></path></svg>`;
+      wrap.appendChild(bubble); wrap.appendChild(btn);
+      wrap.dataset.messageId = data.id; wrap.dataset.username = data.username; wrap.dataset.createdAt = data.created_at;
+      align.appendChild(wrap); chatLog.appendChild(align);
+    }
+
+    // WebSocket — IMPORTANT: matches your route /ws/person/<chat>/
+    const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const chatSocket = new WebSocket(`${wsScheme}://${window.location.host}/ws/person/${encodeURIComponent(roomName)}/`);
+    chatSocket.onmessage = (e)=>{
+      try{
+        const data = JSON.parse(e.data);
+        createMessageElement(data);
+        scrollToBottom();
+      }catch(err){ console.error('WS parse error', err); }
+    };
+    chatSocket.onclose = (e)=>{
+      console.error('Chat socket closed', e.code, e.reason);
+      const msg = document.createElement('div');
+      msg.className = 'text-center text-xs text-[var(--text-secondary)] py-2';
+      msg.textContent = 'Connection lost. Please refresh.';
+      chatLog.appendChild(msg);
+    };
+
+    // Delegation
+    chatLog.addEventListener('click', (e)=>{
+      const replyBtn = e.target.closest('.reply-icon-button');
+      if(replyBtn){ handleReplyClick(replyBtn.closest('[data-message-id]').dataset.messageId); return; }
+      const replyStub = e.target.closest('.reply-stub');
+      if(replyStub){
+        const target = document.querySelector(`[data-message-id='${replyStub.dataset.replyTargetId}']`);
+        if(target){ target.scrollIntoView({behavior:'smooth', block:'center'}); const bubble = target.querySelector('.message-content'); if(bubble){ bubble.classList.add('highlight-message'); setTimeout(()=>bubble.classList.remove('highlight-message'),1500); } }
+      }
+    });
+
+    chatForm.addEventListener('submit',(e)=>{
+      e.preventDefault();
+      const message = messageInput.value.trim(); if(!message) return;
+      chatSocket.send(JSON.stringify({
+        message,
+        room_name: roomName,                  // backend ignores name, uses URL kwarg; harmless
+        reply_to: replyingToMessageId ? parseInt(replyingToMessageId, 10) : null
+      }));
+      messageInput.value=''; cancelReplyBtn.click();
+    });
+
+    // Init
+    document.addEventListener('DOMContentLoaded', ()=>{
+      applyTheme(localStorage.getItem('theme') || 'dark');
+      applyHistoryFilter();
+      setTimeout(()=> scrollToBottom(false), 0);
+      messageInput.focus();
+    });
+  </script>
+</body>
+</html>

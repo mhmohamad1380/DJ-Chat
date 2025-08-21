@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Chats</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* CSS Variables for Theming */
+        :root, [data-theme="dark"] {
+            --bg-main: #0e1621;
+            --bg-secondary: #17212b;
+            --bg-hover: rgb(255 255 255 / 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: rgb(255 255 255 / 0.7);
+            --text-tertiary: rgb(255 255 255 / 0.6);
+            --text-accent: #38bdf8; /* sky-400 */
+            --border-color: rgb(255 255 255 / 0.1);
+        }
+
+        [data-theme="light"] {
+            --bg-main: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-hover: rgb(0 0 0 / 0.05);
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-tertiary: #94a3b8;
+            --text-accent: #0284c7;
+            --border-color: rgb(0 0 0 / 0.1);
+        }
+
+        [data-theme="dusk"] {
+            --bg-main: #1f2937;
+            --bg-secondary: #374151;
+            --bg-hover: rgb(255 255 255 / 0.1);
+            --text-primary: #f3f4f6;
+            --text-secondary: #d1d5db;
+            --text-tertiary: #9ca3af;
+            --text-accent: #fb923c; /* orange-400 */
+            --border-color: rgb(255 255 255 / 0.1);
+        }
+
+        [data-theme="forest"] {
+            --bg-main: #f0fff4;
+            --bg-secondary: #ffffff;
+            --bg-hover: rgb(0 0 0 / 0.05);
+            --text-primary: #2f4f4f;
+            --text-secondary: #5f9ea0;
+            --text-tertiary: #7f8c8d;
+            --text-accent: #2e8b57; /* seagreen */
+            --border-color: rgb(0 0 0 / 0.1);
+        }
+        
+        .themed-hover:hover { background-color: var(--bg-hover); }
+
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: var(--text-tertiary);
+            border-radius: 20px;
+        }
+        .btn {
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body class="bg-[var(--bg-main)]">
+
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-md h-[90vh] max-h-[800px] flex flex-col bg-[var(--bg-secondary)] rounded-3xl shadow-2xl overflow-hidden">
+            
+            <!-- Header -->
+            <header class="p-4 flex-shrink-0 border-b border-[var(--border-color)]">
+                <h1 class="text-2xl font-bold text-center text-[var(--text-primary)]">My Chats</h1>
+            </header>
+
+            <!-- Conversation Lists -->
+            <main class="flex-1 overflow-y-auto custom-scrollbar p-2">
+                <!-- Direct Messages Section -->
+                <div>
+                    <h2 class="px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Direct Messages</h2>
+                    <div class="mt-1 space-y-1">
+                        {% for chat in chats %}
+                            <!-- FIX: Replaced incorrect 'yesno' filter with a standard 'if' block -->
+                            {% if user == chat.user_a %}
+                                {% with other_user=chat.user_b %}
+                                <a href="{% url 'dm_room' chat.uuid %}" class="flex items-center p-3 rounded-lg themed-hover transition-colors">
+                                    <div class="flex-shrink-0 h-10 w-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold">
+                                        {{ other_user.username|first|upper }}
+                                    </div>
+                                    <div class="ml-4 flex-1 overflow-hidden">
+                                        <p class="text-sm font-medium text-[var(--text-primary)] truncate">{{ other_user.username }}</p>
+                                        <p class="text-sm text-[var(--text-secondary)] truncate">{{ chat.last_message|default:"No messages yet" }}</p>
+                                    </div>
+                                </a>
+                                {% endwith %}
+                            {% else %}
+                                {% with other_user=chat.user_a %}
+                                <a href="{% url 'dm_room' chat.uuid %}" class="flex items-center p-3 rounded-lg themed-hover transition-colors">
+                                    <div class="flex-shrink-0 h-10 w-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold">
+                                        {{ other_user.username|first|upper }}
+                                    </div>
+                                    <div class="ml-4 flex-1 overflow-hidden">
+                                        <p class="text-sm font-medium text-[var(--text-primary)] truncate">{{ other_user.username }}</p>
+                                        <p class="text-sm text-[var(--text-secondary)] truncate">{{ chat.last_message|default:"No messages yet" }}</p>
+                                    </div>
+                                </a>
+                                {% endwith %}
+                            {% endif %}
+                        {% empty %}
+                        <p class="px-3 py-4 text-sm text-center text-[var(--text-tertiary)]">No direct messages.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Group Chats Section -->
+                <div class="mt-6">
+                    <h2 class="px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Group Chats</h2>
+                    <div class="mt-1 space-y-1">
+                        {% for room in rooms %}
+                        <a href="/chat/{{ room.name }}/" class="flex items-center p-3 rounded-lg themed-hover transition-colors">
+                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold">
+                                {{ room.name|first|upper }}
+                            </div>
+                            <div class="ml-4 flex-1 overflow-hidden">
+                                <p class="text-sm font-medium text-[var(--text-primary)] truncate">{{ room.name }}</p>
+                                <p class="text-sm text-[var(--text-secondary)] truncate">{{ room.last_message|default:"No messages yet" }}</p>
+                            </div>
+                        </a>
+                        {% empty %}
+                        <p class="px-3 py-4 text-sm text-center text-[var(--text-tertiary)]">You are not in any group chats.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </main>
+
+            <!-- Action Button -->
+            <footer class="p-4 border-t border-[var(--border-color)] flex-shrink-0">
+                <a href="/chat/dm/start/" class="btn w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Start a New Chat
+                </a>
+            </footer>
+
+        </div>
+    </div>
+    
+    <script>
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            applyTheme(savedTheme);
+        });
+    </script>
+
+</body>
+</html>

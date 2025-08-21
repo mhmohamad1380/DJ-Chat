@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Start New Chat</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* CSS Variables for Theming */
+        :root, [data-theme="dark"] {
+            --bg-main: #0e1621;
+            --bg-secondary: #17212b;
+            --bg-hover: rgb(255 255 255 / 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: rgb(255 255 255 / 0.7);
+            --text-accent: #38bdf8; /* sky-400 */
+            --border-color: rgb(255 255 255 / 0.1);
+            --ring-focus: #0ea5e9; /* sky-500 */
+        }
+
+        [data-theme="light"] {
+            --bg-main: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-hover: rgb(0 0 0 / 0.05);
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-accent: #0284c7;
+            --border-color: rgb(0 0 0 / 0.1);
+            --ring-focus: #38bdf8;
+        }
+
+        [data-theme="dusk"] {
+            --bg-main: #1f2937;
+            --bg-secondary: #374151;
+            --bg-hover: rgb(255 255 255 / 0.1);
+            --text-primary: #f3f4f6;
+            --text-secondary: #d1d5db;
+            --text-accent: #fb923c; /* orange-400 */
+            --border-color: rgb(255 255 255 / 0.1);
+            --ring-focus: #fb923c;
+        }
+
+        [data-theme="forest"] {
+            --bg-main: #f0fff4;
+            --bg-secondary: #ffffff;
+            --bg-hover: rgb(0 0 0 / 0.05);
+            --text-primary: #2f4f4f;
+            --text-secondary: #5f9ea0;
+            --text-accent: #2e8b57; /* seagreen */
+            --border-color: rgb(0 0 0 / 0.1);
+        }
+        
+        .themed-hover:hover { background-color: var(--bg-hover); }
+
+        .btn {
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body class="bg-[var(--bg-main)]">
+
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-[var(--bg-secondary)] rounded-3xl shadow-2xl overflow-hidden">
+            
+            <!-- Header -->
+            <header class="p-4 flex-shrink-0 border-b border-[var(--border-color)] text-center">
+                <h1 class="text-xl font-bold text-[var(--text-primary)]">Start a New Chat</h1>
+                <p class="text-sm text-[var(--text-secondary)] mt-1">Enter a username to begin a conversation.</p>
+            </header>
+
+            <!-- Form -->
+            <main class="p-6 space-y-4">
+                <div>
+                    <label for="username-input" class="text-sm font-medium text-[var(--text-primary)]">Username</label>
+                    <input id="username-input" name="username" type="text" required class="mt-1 appearance-none rounded-lg relative block w-full px-4 py-3 border border-[var(--border-color)] placeholder-[var(--text-tertiary)] text-[var(--text-primary)] bg-[var(--bg-main)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)]" placeholder="Enter a username">
+                </div>
+            </main>
+
+            <!-- Action Buttons -->
+            <footer class="p-6 border-t border-[var(--border-color)] flex-shrink-0 space-y-3">
+                <button id="start-chat-btn" class="btn w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Start Chat
+                </button>
+                 <a href="/chat/home" class="btn w-full block text-center py-3 px-4 border border-[var(--border-color)] text-sm font-medium rounded-lg text-[var(--text-primary)] themed-hover">
+                    Cancel
+                </a>
+            </footer>
+
+        </div>
+    </div>
+    
+    <script>
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            applyTheme(savedTheme);
+
+            const usernameInput = document.getElementById('username-input');
+            const startChatBtn = document.getElementById('start-chat-btn');
+
+            usernameInput.focus();
+
+            function startChat() {
+                const username = usernameInput.value.trim();
+                if (username) {
+                    window.location.pathname = `/chat/dm/start/${username}/`;
+                } else {
+                    usernameInput.focus();
+                }
+            }
+
+            startChatBtn.addEventListener('click', startChat);
+
+            usernameInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') {
+                    startChat();
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>

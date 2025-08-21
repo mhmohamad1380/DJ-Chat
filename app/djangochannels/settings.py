@@ -154,6 +154,8 @@ CACHES = {
     }
 }
 
+PRESENCE_REDIS_URL = 'redis://redis:6379/1'
+
 RATELIMIT_USE_CACHE = 'default'
 
 STATIC_ROOT = "./staticfiles/"

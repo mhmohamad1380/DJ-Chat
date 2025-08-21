@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chat with {{ other_user.username }}</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Inter font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+
+  <!-- Emoji Picker Web Component -->
+  <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+
+    /* ====== THEME TOKENS ====== */
+    :root, [data-theme="dark"] {
+      --bg-main:#0e1621; --bg-secondary:#17212b; --bg-input:#0e1621; --bg-hover:rgb(255 255 255 / 0.1);
+      --text-primary:#fff; --text-secondary:rgb(255 255 255 / 0.7); --text-tertiary:rgb(255 255 255 / 0.6);
+      --text-accent:#38bdf8; --border-color:rgb(255 255 255 / 0.1);
+      --bubble-sent-bg:#2b5278; --bubble-received-bg:#182533;
+      --bubble-sent-user:#7dd3fc; --bubble-received-user:#38bdf8;
+      --reply-stub-bg:rgb(0 0 0 / 0.2); --reply-stub-border:#38bdf8; --ring-focus:#0ea5e9;
+    }
+    [data-theme="light"] {
+      --bg-main:#f8fafc; --bg-secondary:#fff; --bg-input:#f1f5f9; --bg-hover:rgb(0 0 0 / 0.05);
+      --text-primary:#1e293b; --text-secondary:#64748b; --text-tertiary:#94a3b8; --text-accent:#0284c7; --border-color:rgb(0 0 0 / 0.1);
+      --bubble-sent-bg:#bae6fd; --bubble-received-bg:#e2e8f0; --bubble-sent-user:#0c4a6e; --bubble-received-user:#0369a1;
+      --reply-stub-bg:#e0f2fe; --reply-stub-border:#38bdf8; --ring-focus:#38bdf8;
+    }
+    [data-theme="dusk"] {
+      --bg-main:#1f2937; --bg-secondary:#374151; --bg-input:#1f2937; --bg-hover:rgb(255 255 255 / 0.1);
+      --text-primary:#f3f4f6; --text-secondary:#d1d5db; --text-tertiary:#9ca3af; --text-accent:#fb923c; --border-color:rgb(255 255 255 / 0.1);
+      --bubble-sent-bg:#4f46e5; --bubble-received-bg:#4b5563; --bubble-sent-user:#a5b4fc; --bubble-received-user:#fb923c;
+      --reply-stub-bg:rgb(0 0 0 / 0.2); --reply-stub-border:#fb923c; --ring-focus:#fb923c;
+    }
+    [data-theme="forest"] {
+      --bg-main:#f0fff4; --bg-secondary:#fff; --bg-input:#e6fffa; --bg-hover:rgb(0 0 0 / 0.05);
+      --text-primary:#2f4f4f; --text-secondary:#5f9ea0; --text-tertiary:#7f8c8d; --text-accent:#2e8b57; --border-color:rgb(0 0 0 / 0.1);
+      --bubble-sent-bg:#8fbc8f; --bubble-received-bg:#e0eee0; --bubble-sent-user:#f5fffa; --bubble-received-user:#2e8b57;
+      --reply-stub-bg:#f0fff0; --reply-stub-border:#2e8b57; --ring-focus:#3cb371;
+    }
+
+    .themed-hover:hover { background-color: var(--bg-hover); }
+
+    #chat-log::-webkit-scrollbar { width: 6px; }
+    #chat-log::-webkit-scrollbar-track { background: transparent; }
+    #chat-log::-webkit-scrollbar-thumb { background-color: var(--text-tertiary); border-radius: 20px; }
+
+    .message-wrapper.mine { flex-direction: row-reverse; }
+
+    @keyframes fadeInSlideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+    .message-animate { animation: fadeInSlideUp .3s ease-out forwards; }
+
+    @keyframes highlight { 0%{background-color:rgba(56,189,248,.3)} 100%{background-color:transparent} }
+    .highlight-message { animation: highlight 1.5s ease-out; }
+
+    @keyframes reveal { from { clip-path: var(--clip-from); } to { clip-path: var(--clip-to); } }
+    ::view-transition-new(root){ animation: reveal .5s ease-in-out; }
+    ::view-transition-old(root), ::view-transition-new(root){ animation-duration:.5s; animation-timing-function:ease-in-out; }
+  </style>
+</head>
+
+<body class="h-full bg-[var(--bg-main)]">
+  <div class="h-full md:flex md:items-center md:justify-center md:p-4">
+    <div class="relative w-full h-full flex flex-col bg-[var(--bg-secondary)] md:max-w-md md:h-[90vh] md:max-h-[800px] md:rounded-3xl md:shadow-2xl overflow-hidden">
+
+      <!-- Header -->
+      <header class="bg-[var(--bg-secondary)] p-4 flex items-center justify-between z-20 flex-shrink-0">
+        <a href="/" id="back-button" class="text-[var(--text-accent)] hover:opacity-80 flex items-center group" aria-label="Back">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 0 1 0 1.414L9.414 10l3.293 3.293a1 1 0 0 1-1.414 1.414l-4-4a1 1 0 0 1 0-1.414l4-4a1 1 0 0 1 1.414 0z" clip-rule="evenodd"/></svg>
+        </a>
+        <div class="text-center">
+          <h1 class="text-md font-bold text-[var(--text-primary)] truncate">{{ other_user.username }}</h1>
+          <p id="online-status" class="text-xs text-[var(--text-tertiary)]">connecting...</p>
+        </div>
+        <div class="flex items-center gap-1">
+          <button id="theme-btn" type="button" class="p-2 rounded-full text-[var(--text-secondary)] themed-hover" aria-label="Theme">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 4a6 6 0 1 0 0 12 6 6 0 0 0 0-12ZM1.5 10a8.5 8.5 0 1 1 17 0 8.5 8.5 0 0 1-17 0Z M10 1.25a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 10 1.25Zm0 14a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75ZM3.646 3.646a.75.75 0 0 1 1.06 0l1.061 1.06a.75.75 0 0 1-1.06 1.061L3.646 4.707a.75.75 0 0 1 0-1.06Zm10.607 10.607a.75.75 0 0 1 1.06 0l1.061 1.06a.75.75 0 1 1-1.06 1.061l-1.061-1.06a.75.75 0 0 1 0-1.061ZM1.25 10a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 0 1.5h-1.5a.75.75 0 0 1-.75-.75Zm14 0a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 0 1.5h-1.5a.75.75 0 0 1-.75-.75Zm-1.893 5.657a.75.75 0 0 1 0-1.06l1.06-1.061a.75.75 0 1 1 1.06 1.06l-1.06 1.061a.75.75 0 0 1 0-1.06Zm-10.607-10.607a.75.75 0 0 1 0-1.06l1.06-1.061a.75.75 0 0 1 1.06 1.06l-1.06 1.061a.75.75 0 0 1-1.06 0Z"/></svg>
+          </button>
+
+          <div class="relative">
+            <button id="menu-btn" type="button" class="p-2 rounded-full text-[var(--text-secondary)] themed-hover" aria-haspopup="true" aria-expanded="false">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 3a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM10 8.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM11.5 15.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0Z"/></svg>
+            </button>
+            <div id="dropdown-menu" class="hidden absolute right-0 mt-2 w-48 bg-[var(--bg-secondary)] rounded-md shadow-lg z-30 border border-[var(--border-color)]">
+              <div class="p-1">
+                <a href="#" id="delete-history-btn" class="block w-full text-left px-3 py-2 text-sm text-[var(--text-primary)] themed-hover rounded-md">Delete history</a>
+                <a href="#" id="undo-delete-btn" class="hidden w-full text-left px-3 py-2 text-sm text-[var(--text-accent)] themed-hover rounded-md">Undo Delete</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Chat area -->
+      <div class="flex-1 relative">
+        <main id="chat-log" class="absolute inset-0 overflow-y-auto p-3 space-y-2">
+          <!-- Message history rendered server-side -->
+          {% for message in messages %}
+            {% ifchanged message.created_at.date %}
+              <div class="date-separator sticky top-2 z-10 flex justify-center my-4">
+                <div class="text-center text-xs text-[var(--text-primary)] bg-[var(--bg-secondary)] rounded-full px-3 py-1 shadow-sm">
+                  <span>{{ message.created_at|date:"F j" }}</span>
+                </div>
+              </div>
+            {% endifchanged %}
+            <div class="w-full flex {% if message.sender.username == username %}justify-end{% else %}justify-start{% endif %}">
+              <div class="message-wrapper group flex items-end gap-2 {% if message.sender.username == username %}mine{% else %}other{% endif %}"
+                   data-message-id="{{ message.id }}"
+                   data-username="{{ message.sender.username }}"
+                   data-created-at="{{ message.created_at.isoformat }}">
+                <div class="relative text-[var(--text-primary)] rounded-xl px-3 py-2 max-w-[80vw] md:max-w-[80%] shadow message-content"
+                     style="word-break: break-word; background-color: {% if message.sender.username == username %}var(--bubble-sent-bg){% else %}var(--bubble-received-bg){% endif %};">
+                  {% if message.reply_to %}
+                    <div data-reply-target-id="{{ message.reply_to.id }}" class="reply-stub cursor-pointer bg-[var(--reply-stub-bg)] border-l-2 border-[var(--reply-stub-border)] pl-2 text-[var(--text-secondary)] text-xs my-2 py-1 text-left">
+                      <p class="font-bold" style="color: {% if message.sender.username == username %}var(--bubble-sent-user){% else %}var(--bubble-received-user){% endif %};">{{ message.reply_to.sender.username }}</p>
+                      <p class="truncate">{{ message.reply_to.message }}</p>
+                    </div>
+                  {% endif %}
+                  <p class="mt-1 message-text text-left">{{ message.message }}</p>
+                  <div class="text-right mt-1 text-xs text-[var(--text-tertiary)]">
+                    <span>{{ message.created_at|date:"H:i" }}</span>
+                  </div>
+                </div>
+                <button type="button" class="reply-icon-button flex-shrink-0 p-1 rounded-full text-[var(--text-secondary)] themed-hover opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity" aria-label="Reply">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M15 10a.75.75 0 0 1-.75.75H7.707l2.293 2.293a.75.75 0 1 1-1.06 1.06l-3.5-3.5a.75.75 0 0 1 0-1.06l3.5-3.5a.75.75 0 1 1 1.06 1.06L7.707 9.25H14.25A.75.75 0 0 1 15 10Z" clip-rule="evenodd"></path></svg>
+                </button>
+              </div>
+            </div>
+          {% endfor %}
+        </main>
+
+        <button id="go-to-bottom-btn" class="hidden absolute bottom-4 right-4 z-10 bg-sky-500 text-white rounded-full p-2 shadow-lg" aria-label="Scroll to bottom">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+        </button>
+      </div>
+
+      <!-- Footer -->
+      <footer class="relative flex-shrink-0 bg-[var(--bg-secondary)] z-10">
+        <div id="reply-context-bar" class="hidden p-2 px-4 text-sm border-t border-[var(--border-color)]">
+          <div class="flex justify-between items-center gap-2">
+            <div class="flex-1 overflow-hidden">
+              <p class="font-bold text-[var(--text-accent)]">Replying to <span id="reply-username"></span></p>
+              <p id="reply-text" class="text-[var(--text-secondary)] truncate"></p>
+            </div>
+            <button id="cancel-reply-btn" type="button" class="p-1 rounded-full themed-hover" aria-label="Cancel reply">
+              <svg class="w-5 h-5 text-[var(--text-secondary)]" fill="currentColor" viewBox="0 0 20 20"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" clip-rule="evenodd"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="p-3 flex items-center space-x-3">
+          <button id="emoji-button" type="button" class="p-2 rounded-full text-[var(--text-secondary)] hover:text-[var(--text-accent)] themed-hover" aria-label="Emoji picker">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2Zm0 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm-3.5 6a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm7 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm-5.25 4.25a.75.75 0 0 1 1.5.04c.188 1.25.422 2.22.678 2.926a.75.75 0 0 1-1.416.508c-.2-.558-.4-1.35-.562-2.434a.75.75 0 0 1 .8-.8Z"/></svg>
+          </button>
+
+          <form id="chat-form" class="flex-1 flex items-center space-x-3">
+            <input id="chat-message-input" type="text" placeholder="Write a message..." autocomplete="off"
+              class="flex-1 appearance-none rounded-full px-5 py-2 border-none placeholder-[var(--text-tertiary)] text-[var(--text-primary)] bg-[var(--bg-input)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)]"/>
+            <button id="chat-message-submit" type="submit"
+              class="inline-flex items-center justify-center rounded-full h-10 w-10 bg-sky-500 text-white hover:bg-sky-600 focus:outline-none flex-shrink-0" aria-label="Send">
+              <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+            </button>
+          </form>
+        </div>
+
+        <div id="emoji-picker-container" class="h-0 transition-all duration-300 ease-in-out overflow-hidden">
+          <emoji-picker class="w-full h-64 md:h-72"></emoji-picker>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div id="confirmation-modal" class="hidden fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4">
+    <div class="bg-[var(--bg-secondary)] rounded-lg p-6 shadow-xl w-full max-w-sm">
+      <h3 class="text-lg font-medium text-[var(--text-primary)]">Delete history?</h3>
+      <p class="mt-2 text-sm text-[var(--text-secondary)]">This will only hide history on this device.</p>
+      <div class="mt-4 flex justify-end gap-3">
+        <button id="modal-cancel-btn" class="px-4 py-2 rounded-md text-sm font-medium themed-hover">Cancel</button>
+        <button id="modal-confirm-btn" class="px-4 py-2 rounded-md text-sm font-medium bg-red-600 text-white hover:bg-red-700">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Theme Modal -->
+  <div id="theme-modal" class="hidden fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4">
+    <div id="theme-modal-content" class="bg-[var(--bg-secondary)] rounded-lg p-6 shadow-xl w-full max-w-sm">
+      <h3 class="text-lg font-medium text-[var(--text-primary)]">Choose a theme</h3>
+      <div class="grid grid-cols-2 gap-4 mt-6">
+        <button class="theme-option-btn flex flex-col items-center gap-2 p-2 rounded-lg themed-hover" data-theme="light">
+          <div class="w-full h-16 rounded-md p-2 flex flex-col gap-1 border border-slate-200" style="background-color:#f8fafc;">
+            <div class="w-3/4 h-4 rounded-full ml-auto" style="background-color:#bae6fd;"></div>
+            <div class="w-1/2 h-4 rounded-full" style="background-color:#e2e8f0;"></div>
+          </div>
+          <span class="text-sm font-medium text-[var(--text-primary)]">Light</span>
+        </button>
+        <button class="theme-option-btn flex flex-col items-center gap-2 p-2 rounded-lg themed-hover" data-theme="dark">
+          <div class="w-full h-16 rounded-md p-2 flex flex-col gap-1 border border-slate-700" style="background-color:#0e1621;">
+            <div class="w-3/4 h-4 rounded-full ml-auto" style="background-color:#2b5278;"></div>
+            <div class="w-1/2 h-4 rounded-full" style="background-color:#182533;"></div>
+          </div>
+          <span class="text-sm font-medium text-[var(--text-primary)]">Dark</span>
+        </button>
+        <button class="theme-option-btn flex flex-col items-center gap-2 p-2 rounded-lg themed-hover" data-theme="dusk">
+          <div class="w-full h-16 rounded-md p-2 flex flex-col gap-1 border border-slate-600" style="background-color:#1f2937;">
+            <div class="w-3/4 h-4 rounded-full ml-auto" style="background-color:#4f46e5;"></div>
+            <div class="w-1/2 h-4 rounded-full" style="background-color:#4b5563;"></div>
+          </div>
+          <span class="text-sm font-medium text-[var(--text-primary)]">Dusk</span>
+        </button>
+        <button class="theme-option-btn flex flex-col items-center gap-2 p-2 rounded-lg themed-hover" data-theme="forest">
+          <div class="w-full h-16 rounded-md p-2 flex flex-col gap-1 border border-green-200" style="background-color:#f0fff4;">
+            <div class="w-3/4 h-4 rounded-full ml-auto" style="background-color:#8fbc8f;"></div>
+            <div class="w-1/2 h-4 rounded-full" style="background-color:#e0eee0;"></div>
+          </div>
+          <span class="text-sm font-medium text-[var(--text-primary)]">Forest</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  {{ room_name|json_script:"room-name" }}
+  {{ username|json_script:"auth-username" }}
+
+  <script>
+    // ---------- DOM refs ----------
+    const roomName = JSON.parse(document.getElementById('room-name').textContent);
+    const authUsername = JSON.parse(document.getElementById('auth-username').textContent);
+    const chatLog = document.getElementById('chat-log');
+    const chatForm = document.getElementById('chat-form');
+    const messageInput = document.getElementById('chat-message-input');
+    const replyContextBar = document.getElementById('reply-context-bar');
+    const replyUsernameEl = document.getElementById('reply-username');
+    const replyTextEl = document.getElementById('reply-text');
+    const cancelReplyBtn = document.getElementById('cancel-reply-btn');
+    const emojiButton = document.getElementById('emoji-button');
+    const emojiPickerContainer = document.getElementById('emoji-picker-container');
+    const emojiPicker = document.querySelector('emoji-picker');
+    const backButton = document.getElementById('back-button');
+    const menuBtn = document.getElementById('menu-btn');
+    const dropdownMenu = document.getElementById('dropdown-menu');
+    const deleteHistoryBtn = document.getElementById('delete-history-btn');
+    const undoDeleteBtn = document.getElementById('undo-delete-btn');
+    const confirmationModal = document.getElementById('confirmation-modal');
+    const modalCancelBtn = document.getElementById('modal-cancel-btn');
+    const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+    const goToBottomBtn = document.getElementById('go-to-bottom-btn');
+    const themeBtn = document.getElementById('theme-btn');
+    const themeModal = document.getElementById('theme-modal');
+    const onlineStatusEl = document.getElementById('online-status');
+
+    // ---------- State ----------
+    let replyingToMessageId = null;
+    let isEmojiPickerOpen = false;
+    const deletedUntilKey = `deleted_until_${roomName}`;
+    let themeAnimationCoords = { x: 0, y: 0 };
+    let presenceTimer = null;
+
+    // Presence state for "last seen" logic
+    let peerOnline = null;         // true | false | null (unknown)
+    let lastSeenAt = null;         // Date of last confirmed activity
+    let offlineTicker = null;      // interval id for updating the label while offline
+
+    // Helpers for presence label
+    function formatRelativeLastSeen(ts) {
+      if (!ts) return 'offline';
+      const diff = Date.now() - ts.getTime();
+      const oneMin = 60 * 1000;
+      const thirtyMin = 30 * oneMin;
+      if (diff < oneMin) return 'last seen < 1 minute ago';
+      if (diff < thirtyMin) {
+        const mins = Math.floor(diff / oneMin);
+        return `last seen ${mins} minute${mins !== 1 ? 's' : ''} ago`;
+      }
+      const timeStr = ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+      return `last seen at ${timeStr}`;
+    }
+
+    function refreshPresenceLabel() {
+      if (!onlineStatusEl) return;
+      if (peerOnline) {
+        onlineStatusEl.textContent = 'online';
+        onlineStatusEl.style.color = 'var(--text-accent)';
+      } else {
+        onlineStatusEl.textContent = formatRelativeLastSeen(lastSeenAt);
+        onlineStatusEl.style.color = 'var(--text-tertiary)';
+      }
+    }
+
+    // ---------- Theme Switcher ----------
+    function applyTheme(theme) { document.documentElement.setAttribute('data-theme', theme); }
+
+    themeBtn.addEventListener('click', (e) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      themeAnimationCoords = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 };
+      themeModal.classList.remove('hidden');
+    });
+
+    document.querySelectorAll('.theme-option-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const newTheme = btn.dataset.theme;
+        themeModal.classList.add('hidden');
+
+        if (!document.startViewTransition) {
+          applyTheme(newTheme);
+          localStorage.setItem('theme', newTheme);
+          return;
+        }
+
+        const { x, y } = themeAnimationCoords;
+        const endRadius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+        document.documentElement.style.setProperty('--clip-from', `circle(0 at ${x}px ${y}px)`);
+        document.documentElement.style.setProperty('--clip-to', `circle(${endRadius}px at ${x}px ${y}px)`);
+        const transition = document.startViewTransition(() => applyTheme(newTheme));
+        transition.ready.then(() => localStorage.setItem('theme', newTheme));
+      });
+    });
+
+    themeModal.addEventListener('click', (e) => { if (e.target === themeModal) themeModal.classList.add('hidden'); });
+
+    // ---------- Menu & Delete logic ----------
+    function updateMenuButtons() {
+      const isDeleted = localStorage.getItem(deletedUntilKey) !== null;
+      deleteHistoryBtn.classList.remove('hidden');
+      undoDeleteBtn.classList.toggle('hidden', !isDeleted);
+    }
+
+    menuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      updateMenuButtons();
+      const isHidden = dropdownMenu.classList.contains('hidden');
+      dropdownMenu.classList.toggle('hidden', !isHidden);
+      menuBtn.setAttribute('aria-expanded', isHidden);
+    });
+
+    deleteHistoryBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      dropdownMenu.classList.add('hidden');
+      menuBtn.setAttribute('aria-expanded', 'false');
+      confirmationModal.classList.remove('hidden');
+    });
+
+    undoDeleteBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      localStorage.removeItem(deletedUntilKey);
+      window.location.reload();
+    });
+
+    function hideModal() { confirmationModal.classList.add('hidden'); }
+    modalCancelBtn.addEventListener('click', hideModal);
+    modalConfirmBtn.addEventListener('click', () => {
+      localStorage.setItem(deletedUntilKey, new Date().toISOString());
+      applyHistoryFilter();
+      hideModal();
+    });
+
+    document.addEventListener('click', () => {
+      if (!dropdownMenu.classList.contains('hidden')) {
+          dropdownMenu.classList.add('hidden');
+          menuBtn.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    // ---------- Emoji picker ----------
+    function toggleEmojiPicker() {
+      isEmojiPickerOpen = !isEmojiPickerOpen;
+      emojiPickerContainer.style.height = isEmojiPickerOpen ? '18rem' : '0px';
+    }
+    function hideEmojiPicker() {
+      if (isEmojiPickerOpen) {
+        isEmojiPickerOpen = false;
+        emojiPickerContainer.style.height = '0px';
+      }
+    }
+
+    emojiButton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleEmojiPicker();
+    });
+
+    emojiPicker?.addEventListener('emoji-click', event => {
+      const { selectionStart, selectionEnd, value } = messageInput;
+      const emoji = event.detail.unicode;
+      messageInput.value = value.substring(0, selectionStart) + emoji + value.substring(selectionEnd);
+      messageInput.selectionStart = messageInput.selectionEnd = selectionStart + emoji.length;
+      messageInput.focus();
+    });
+
+    messageInput.addEventListener('focus', hideEmojiPicker);
+
+    // ---------- Reply logic ----------
+    function handleReplyClick(messageId) {
+      const messageElement = document.querySelector(`[data-message-id='${messageId}']`);
+      if (!messageElement) return;
+      replyingToMessageId = messageId;
+      replyUsernameEl.textContent = messageElement.dataset.username || '';
+      const txt = messageElement.querySelector('.message-text')?.textContent || '';
+      replyTextEl.textContent = txt;
+      replyContextBar.classList.remove('hidden');
+      messageInput.focus();
+    }
+    cancelReplyBtn.addEventListener('click', () => {
+      replyingToMessageId = null;
+      replyContextBar.classList.add('hidden');
+    });
+
+    // ---------- Scroll logic ----------
+    function scrollToBottom(smooth = true) { chatLog.scrollTo({ top: chatLog.scrollHeight, behavior: smooth ? 'smooth' : 'auto' }); }
+    chatLog.addEventListener('scroll', () => {
+      const isScrolledUp = chatLog.scrollHeight - chatLog.scrollTop - chatLog.clientHeight > 200;
+      goToBottomBtn.classList.toggle('hidden', !isScrolledUp);
+    });
+    goToBottomBtn.addEventListener('click', () => scrollToBottom());
+
+    // ---------- History filter & rendering ----------
+    function applyHistoryFilter() {
+      const deletedUntilTimestamp = localStorage.getItem(deletedUntilKey);
+      if (!deletedUntilTimestamp) return;
+      const messages = document.querySelectorAll('.message-wrapper');
+      messages.forEach(msg => {
+        if (msg.dataset.createdAt < deletedUntilTimestamp) {
+          msg.parentElement.remove();
+        }
+      });
+      // Clean orphaned date separators
+      const seps = document.querySelectorAll('.date-separator');
+      seps.forEach(sep => {
+        const next = sep.nextElementSibling;
+        if (!next || next.classList.contains('date-separator')) sep.remove();
+      });
+    }
+
+    function createMessageElement(data) {
+      if (!data.created_at) {
+        data.created_at = new Date().toISOString();
+      }
+
+      // ---- Robust day comparison and correct last-message detection
+      const getDayKey = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      const newMessageDate = new Date(data.created_at);
+      const newDayKey = getDayKey(newMessageDate);
+
+      // Find the true last message wrapper (ignore date separators and other divs)
+      const wrappers = chatLog.querySelectorAll('.message-wrapper');
+      const lastMessageEl = wrappers.length ? wrappers[wrappers.length - 1] : null;
+      const lastDayKey = lastMessageEl ? getDayKey(new Date(lastMessageEl.dataset.createdAt)) : null;
+
+      // Only insert a date separator if this is the first message of a new day
+      if (newDayKey !== lastDayKey) {
+        const wrap = document.createElement('div');
+        wrap.className = "date-separator sticky top-2 z-10 flex justify-center my-4";
+        const pill = document.createElement('div');
+        pill.className = "text-center text-xs text-[var(--text-primary)] bg-[var(--bg-secondary)] rounded-full px-3 py-1 shadow-sm";
+        pill.innerHTML = `<span>${newMessageDate.toLocaleDateString('en-US', { month:'long', day:'numeric' })}</span>`;
+        wrap.appendChild(pill);
+        chatLog.appendChild(wrap);
+      }
+
+      const deletedUntilTimestamp = localStorage.getItem(deletedUntilKey);
+      if (deletedUntilTimestamp && data.created_at < deletedUntilTimestamp) return;
+
+      const mine = data.username === authUsername;
+
+      const alignmentWrapper = document.createElement('div');
+      alignmentWrapper.className = `w-full flex ${mine ? 'justify-end' : 'justify-start'}`;
+
+      const wrapper = document.createElement('div');
+      wrapper.className = `message-wrapper group flex items-end gap-2 message-animate ${mine ? 'mine' : 'other'}`;
+
+      const bubble = document.createElement('div');
+      bubble.className = `relative text-[var(--text-primary)] rounded-xl px-3 py-2 max-w-[80vw] md:max-w-[80%] shadow message-content`;
+      bubble.style.wordBreak = 'break-word';
+      bubble.style.backgroundColor = mine ? 'var(--bubble-sent-bg)' : 'var(--bubble-received-bg)';
+
+      let bubbleHTML = `<p class="font-bold text-sm" style="color:${mine ? 'var(--bubble-sent-user)' : 'var(--bubble-received-user)'};">${data.username}</p>`;
+
+      if (data.reply_to) {
+        const userColor = mine ? 'var(--bubble-sent-user)' : 'var(--bubble-received-user)';
+        bubbleHTML += `
+          <div data-reply-target-id="${data.reply_to.id}" class="reply-stub cursor-pointer bg-[var(--reply-stub-bg)] border-l-2 border-[var(--reply-stub-border)] pl-2 text-[var(--text-secondary)] text-xs my-2 py-1 text-left">
+            <p class="font-bold" style="color:${userColor};">${data.reply_to.sender?.username || ''}</p>
+            <p class="truncate">${data.reply_to.message || ''}</p>
+          </div>`;
+      }
+
+      const messageTime = new Date(data.created_at).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', hour12:false });
+      bubbleHTML += `<p class="mt-1 message-text text-left">${data.message}</p>
+                     <div class="text-right mt-1 text-xs text-[var(--text-tertiary)]"><span>${messageTime}</span></div>`;
+      bubble.innerHTML = bubbleHTML;
+
+      const replyButton = document.createElement('button');
+      replyButton.type = 'button';
+      replyButton.className = 'reply-icon-button flex-shrink-0 p-1 rounded-full text-[var(--text-secondary)] themed-hover opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity';
+      replyButton.setAttribute('aria-label','Reply');
+      replyButton.innerHTML = `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M15 10a.75.75 0 0 1-.75.75H7.707l2.293 2.293a.75.75 0 1 1-1.06 1.06l-3.5-3.5a.75.75 0 0 1 0-1.06l3.5-3.5a.75.75 0 1 1 1.06 1.06L7.707 9.25H14.25A.75.75 0 0 1 15 10Z" clip-rule="evenodd"></path></svg>`;
+
+      wrapper.appendChild(bubble);
+      wrapper.appendChild(replyButton);
+
+      wrapper.dataset.messageId = data.id;
+      wrapper.dataset.username = data.username;
+      wrapper.dataset.createdAt = data.created_at;
+
+      alignmentWrapper.appendChild(wrapper);
+      chatLog.appendChild(alignmentWrapper);
+    }
+
+    // ---------- Presence handling ----------
+    function handlePresenceUpdate(data) {
+      // clear the “checking…” fallback timer
+      if (presenceTimer) { clearTimeout(presenceTimer); presenceTimer = null; }
+
+      // Normalize incoming last_seen (ISO) to a Date if present
+      let incomingLastSeen = null;
+      if (data.last_seen) {
+        try { incomingLastSeen = new Date(data.last_seen); } catch (_) { /* ignore */ }
+      }
+
+      if (data.peer_online) {
+        peerOnline = true;
+        lastSeenAt = incomingLastSeen || new Date();
+        // stop offline refresher
+        if (offlineTicker) { clearInterval(offlineTicker); offlineTicker = null; }
+      } else {
+        peerOnline = false;
+        if (incomingLastSeen) lastSeenAt = incomingLastSeen;
+        // refresh relative label every 30s while offline
+        if (!offlineTicker) {
+          offlineTicker = setInterval(() => {
+            if (!peerOnline) refreshPresenceLabel();
+          }, 30_000);
+        }
+      }
+
+      refreshPresenceLabel();
+    }
+
+    // ---------- WebSocket ----------
+    const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const chatSocket = new WebSocket(`${wsScheme}://${window.location.host}/ws/person/${encodeURIComponent(roomName)}/`);
+
+    chatSocket.onopen = function () {
+      if (onlineStatusEl) {
+        onlineStatusEl.textContent = 'checking...';
+        onlineStatusEl.style.color = 'var(--text-tertiary)';
+      }
+      chatSocket.send(JSON.stringify({ action: 'presence.list' }));
+
+      // 3s fallback to show an offline status if no presence arrives
+      presenceTimer = setTimeout(() => {
+        if (onlineStatusEl && onlineStatusEl.textContent === 'checking...') {
+          peerOnline = false;
+          if (!lastSeenAt) lastSeenAt = new Date();
+          refreshPresenceLabel();
+        }
+      }, 3000);
+    };
+
+    chatSocket.onmessage = function (e) {
+      try {
+        const data = JSON.parse(e.data);
+
+        if (data.type === 'presence') {
+          handlePresenceUpdate(data);
+          return;
+        }
+
+        if (data.reply_to && typeof data.reply_to === 'number') {
+          data.reply_to = {
+            id: data.reply_to,
+            message: data.reply_to_message,
+            sender: { username: data.reply_to_username }
+          };
+        }
+        createMessageElement(data);
+        scrollToBottom();
+      } catch (error) {
+        console.error("Failed to parse incoming message:", error, e.data);
+      }
+    };
+
+    chatSocket.onclose = function () {
+      console.error('Chat socket closed unexpectedly');
+      if (onlineStatusEl) {
+        onlineStatusEl.textContent = 'disconnected';
+        onlineStatusEl.style.color = 'var(--text-tertiary)';
+      }
+    };
+
+    // ---------- Events ----------
+    chatLog.addEventListener('click', function(e) {
+      const replyButton = e.target.closest('.reply-icon-button');
+      if (replyButton) {
+        const id = replyButton.closest('[data-message-id]')?.dataset.messageId;
+        if (id) handleReplyClick(id);
+        return;
+      }
+      const replyStub = e.target.closest('.reply-stub');
+      if (replyStub) {
+        const target = document.querySelector(`[data-message-id='${replyStub.dataset.replyTargetId}']`);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          const bubble = target.querySelector('.message-content');
+          if (bubble) {
+            bubble.classList.add('highlight-message');
+            setTimeout(() => bubble.classList.remove('highlight-message'), 1500);
+          }
+        }
+      }
+    });
+
+    chatForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const message = messageInput.value.trim();
+      if (!message) return;
+      chatSocket.send(JSON.stringify({
+        message,
+        reply_to: replyingToMessageId ? parseInt(replyingToMessageId, 10) : null
+      }));
+      messageInput.value = '';
+      cancelReplyBtn.click();
+    });
+
+    backButton.addEventListener('click', (e) => {
+      if (isEmojiPickerOpen) {
+        e.preventDefault();
+        hideEmojiPicker();
+      }
+    });
+
+    // ---------- Initial setup ----------
+    document.addEventListener('DOMContentLoaded', () => {
+      applyTheme(localStorage.getItem('theme') || 'dark');
+      applyHistoryFilter();
+      scrollToBottom(false);
+      messageInput.focus();
+    });
+  </script>
+</body>
+</html>
